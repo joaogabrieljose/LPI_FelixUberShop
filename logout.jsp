@@ -14,8 +14,11 @@
 	String nome = "nome recebido: " + request.getParameter("nome");
 
 		out.print(nome); 
+		echo "teste";
+		echo "teste2";
 
 	%>
+	<h1>Logout</h1>
 
 </body>
 </html>
