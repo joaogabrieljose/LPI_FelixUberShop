@@ -8,16 +8,29 @@
 	<title></title>
 </head>
 <body>
+	<main>
+		<div class="container">
+			<div class="row">
+				<div class="col-12">
+					<h1>Logout</h1>
+				</div>
+			</div>
+
+
 
 		
+	
 	<% 
-	String nome = "nome recebido: " + request.getParameter("nome");
-
+		String nome = "nome recebido: " + request.getParameter("nome");
 		out.print(nome); 
-		echo "teste";
-		echo "teste2";
 
 	%>
+
+	</main>
+
+
+		
+	
 	<h1>Logout</h1>
 
 </body>

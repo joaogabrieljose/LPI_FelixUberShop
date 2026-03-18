@@ -1,0 +1,156 @@
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  background:#f5f6f8;
+  color:#405d9b;
+}
+
+header{
+  background:#7cbbab;
+  padding:14px 20px;
+}
+
+.navbar{
+  max-width:1100px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  gap:150px;              /* espaço entre logo e menu */
+  flex-direction:row;    /* força lado a lado */
+}
+
+.brand{ display:flex; align-items:center; text-decoration:none; }
+
+.logo{
+  width:100px;
+  height:100px;
+  object-fit:contain;
+  border-radius:10px;
+  background: rgba(255,255,255,.08);
+  padding:1px;
+}
+
+.menu{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;        /* se não couber, quebra mas mantém lado a lado */
+}
+
+.menu a{
+  display:inline-block;
+  text-decoration:none;
+  color:#fff;
+  background: rgba(255,255,255,.08);
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  transition:.2s;
+  font-size:14px;
+}
+
+.menu a:hover{
+  background: rgba(215, 139, 8, 0.993);
+  transform: translateY(-1px);
+}
+.menu a.active{
+  background:#d38d0c;      /* verde destaque */
+  color:#0b1220;           /* texto escuro */
+  border-color:#22c55e;
+  font-weight:700;
+}
+
+
+/* ===== Destaque (Hero) ===== */
+.destaque{
+  max-width:1100px;
+  margin: 24px auto;
+  padding: 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+}
+
+.destaque-texto{
+  flex:1;
+  min-width: 280px;
+}
+
+.destaque-texto h1{
+  font-size:46px;
+  line-height:1.05;
+  margin-bottom:14px;
+  color:#111827;
+}
+
+.destaque-texto p{
+  font-size:16px;
+  color:#374151;
+  max-width: 520px;
+  margin-bottom:18px;
+}
+
+.btn-destaque{
+  display:inline-block;
+  background:#daaf04;           /* verde parecido ao exemplo */
+  color:#0d0d0d;
+  text-decoration:none;
+  padding:12px 18px;
+  border-radius:10px;
+  font-weight:700;
+  transition: .2s ease;
+  box-shadow: 0 8px 18px rgba(47,107,31,.25);
+}
+
+.btn-destaque:hover{
+  background:#cb300a;
+  transform: translateY(-1px);
+}
+
+.destaque-imagem{
+  flex:1;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.destaque-imagem img{
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius:18px;
+  object-fit:cover;
+}
+
+/* ===== Responsivo ===== */
+@media (max-width: 900px){
+  .destaque{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .destaque-imagem{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .destaque-texto h1{
+    font-size:34px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+main{
+  max-width:1100px;
+  margin:20px auto;
+  padding:0 20px;
+}
