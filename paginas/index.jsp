@@ -242,14 +242,14 @@
 						<img src="fruta_epoca.jpg" alt="Fruta da época">
 						<h3>Fruta da Época</h3>
 						<p class="promo-desc">Maçã, banana e laranja com desconto até domingo.</p>
-						<p class="promo-info"><strong>Exemplo:</strong> Laranja 1kg — <span class="preco">1,49€</span></p>
+						<p class="promo-info"><strong>Maior saída:</strong> Laranja 1kg — <span class="preco">1,49€</span></p>
 						</article>
 
 						<article class="promo-card">
 						<img src="leite_iogurte.png" alt="Laticínios">
 						<h3>Laticínios</h3>
 						<p class="promo-desc">Leite e iogurtes para a sua semana com preço especial.</p>
-						<p class="promo-info"><strong>Exemplo:</strong> Leite 1L — <span class="preco">0,99€</span></p>
+						<p class="promo-info"><strong>Maior saída:</strong> Leite 1L — <span class="preco">0,99€</span></p>
 						</article>
 					</div>
 
@@ -262,7 +262,7 @@
 		<section id="horarios" class="horarios">
 		</section>
 
-	</main>
+	</main><br><br>
 
 	<footer class="footer">
 		<div class="footer-container">
@@ -316,7 +316,7 @@
 				<strong>Telefone:</strong> 800 000 000 (número gratuito)<br>
 				<strong>Telefone:</strong> 289 000 000 (rede fixa nacional)<br><br>
 				<strong>Horário:</strong><br>
-				Dias úteis das 9h às 18h
+				Dias úteis das 8h às 19h
 			</p>
 			</div>
 
@@ -379,11 +379,4 @@
 	</script>
 	
 </body>
-
-
-
-
-
-
-
 </html>
