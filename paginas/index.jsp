@@ -20,7 +20,7 @@
 				<li><a href="#produtos">Produtos</a></li>
 				<li><a href="#promocoes">Promoções</a></li>
 				<li><a href="#horarios">Horários &amp; Localização</a></li>
-				<li><a href="#">Login</a></li>
+				<li><a href="#" id="abrirLoginLink">Login</a></li>
 				<li><a href="#">Inscrever-se</a></li>
 			</ul>
 		</nav>
@@ -326,10 +326,64 @@
 			<p>© 2026 FelixUberShop — Todos os direitos reservados.</p>
 		</div>
 	</footer>
+
+
+	<!-- Modal Login (oculto) -->
+	<div id="loginModal" class="modal">
+		<div class="modal-box">
+			<div class="modal-top">
+			<h2>Login</h2>
+			<a href="#" class="modal-close" id="fecharLoginLink">✕</a>
+			</div>
+
+			<form action="logout.jsp" method="POST" class="login-form">
+				<label for="utilizador">Utilizador</label>
+				<input type="text" id="utilizador" name="utilizador" required>
+
+				Senha
+				<input type="password" id="senha" name="senha" required>
+
+				<button type="submit" class="btn-submit">entrar</button>
+			</form>
+
+			<p class="modal-note">
+			Ainda não tens conta? <a href="#">Inscrever-se</a>
+			</p>
+		</div>
+	</div>
+
+	<script>
+	const modal = document.getElementById("loginModal");
+	const abrir = document.getElementById("abrirLoginLink");
+	const fechar = document.getElementById("fecharLoginLink");
+
+	abrir.addEventListener("click", function(e){
+		e.preventDefault();
+		modal.classList.add("show");
+	});
+
+	fechar.addEventListener("click", function(e){
+		e.preventDefault();
+		modal.classList.remove("show");
+	});
+
+	// Fechar ao clicar fora da caixa
+	modal.addEventListener("click", function(e){
+		if(e.target.id === "loginModal") modal.classList.remove("show");
+	});
+
+	// Fechar com ESC
+	document.addEventListener("keydown", function(e){
+		if(e.key === "Escape") modal.classList.remove("show");
+	});
+	</script>
 	
-
-
-
-
 </body>
+
+
+
+
+
+
+
 </html>
