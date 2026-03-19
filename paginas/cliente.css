@@ -1,0 +1,191 @@
+/* ===== Dashboard Cliente ===== */
+.dash-top{
+  background:#111827;
+  color:#fff;
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.brand{ display:flex; align-items:center; text-decoration:none; }
+
+.logo{
+  width:100px;
+  height:100px;
+  object-fit:contain;
+  border-radius:10px;
+  background: rgba(255,255,255,.08);
+  padding:1px;
+}
+
+.dash-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.dash-badge{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:#22c55e;
+  color:#0b1220;
+  font-weight:900;
+}
+
+.dash-brand h1{ margin:0; font-size:18px; }
+.dash-brand p{ margin:2px 0 0; font-size:12px; opacity:.8; }
+
+.dash-user{ display:flex; gap:10px; align-items:center; }
+.pill{
+  display:inline-block;
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  color:#fff;
+  padding:8px 10px;
+  border-radius:999px;
+  font-size:12px;
+  text-decoration:none;
+}
+.pill.danger{ background: rgba(239,68,68,.18); border-color: rgba(239,68,68,.25); }
+
+.dash-layout{
+  max-width:1100px;
+  margin:18px auto;
+  padding:0 20px;
+  display:grid;
+  grid-template-columns: 260px 1fr;
+  gap:16px;
+}
+
+.dash-side{
+  background:#f3a011;
+  border:1px solid #eef0f3;
+  border-radius:16px;
+  padding:14px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.05);
+}
+
+/* menu no dashboard (nav.menu já existe no teu projeto, mas aqui damos look “sidebar”) */
+.dash-side .menu{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.dash-side .menu a{
+  text-decoration:none;
+  color:#111827;
+  background:#f3f4f6;
+  border:1px solid #e5e7eb;
+  padding:10px 12px;
+  border-radius:12px;
+  font-weight:700;
+  transition:.2s;
+}
+
+.dash-side .menu a:hover{ background:#e9edf3; transform: translateY(-1px); }
+.dash-side .menu a.active{
+  background:#22c55e;
+  border-color:#22c55e;
+  color:#0b1220;
+}
+
+/* Conteúdo */
+.dash-main{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.dash-hero{
+  background:#fff;
+  border:1px solid #eef0f3;
+  border-radius:18px;
+  padding:18px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.05);
+}
+
+.dash-hero h2{ margin:0 0 8px; font-size:22px; }
+.dash-hero p{ margin:0 0 14px; color:#374151; }
+
+.dash-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+.btn{
+  display:inline-block;
+  background:#2f6b1f;
+  color:#fff;
+  text-decoration:none;
+  font-weight:900;
+  padding:10px 12px;
+  border-radius:12px;
+}
+.btn:hover{ opacity:.95; transform: translateY(-1px); }
+.btn.outline{
+  background:#fff;
+  color:#2f6b1f;
+  border:2px solid #2f6b1f;
+}
+
+.dash-cards{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:14px;
+}
+
+.dash-card{
+  background:#fff;
+  border:1px solid #eef0f3;
+  border-radius:16px;
+  padding:16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.05);
+}
+
+.dash-card h3{ margin:0 0 10px; font-size:14px; color:#111827; }
+.dash-big{ font-size:26px; font-weight:900; margin:0 0 4px; }
+.dash-muted{ margin:0; color:#6b7280; font-size:12px; }
+
+.dash-section{
+  background:#fff;
+  border:1px solid #eef0f3;
+  border-radius:18px;
+  padding:16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.05);
+}
+
+.dash-section-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.link{ color:#2f6b1f; font-weight:900; text-decoration:none; }
+.link:hover{ text-decoration:underline; }
+
+.dash-table{
+  border:1px solid #eef0f3;
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.dash-table .row{
+  display:grid;
+  grid-template-columns: 1.2fr 0.9fr 0.7fr 0.9fr;
+  gap:8px;
+  padding:10px 12px;
+  border-top:1px solid #eef0f3;
+}
+
+.dash-table .row.head{
+  background:#f3f4f6;
+  font-weight:900;
+  border-top:none;
+}
+
+/* responsivo */
+@media (max-width: 900px){
+  .dash-layout{ grid-template-columns: 1fr; }
+}
