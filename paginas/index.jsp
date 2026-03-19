@@ -336,8 +336,8 @@
 			<a href="#" class="modal-close" id="fecharLoginLink">✕</a>
 			</div>
 
-			<form action="logout.jsp" method="POST" class="login-form">
-				<label for="utilizador">Utilizador</label>
+			<form action="login_conect.jsp" method="POST" class="login-form">
+				Utilizador
 				<input type="text" id="utilizador" name="utilizador" required>
 
 				Senha
