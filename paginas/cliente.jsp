@@ -70,6 +70,36 @@ try {
 %>
 
 
+
+<%-- Consultar saldo da carteira do utilizador --%>
+<%
+Connection conS = null;
+PreparedStatement psS = null;
+ResultSet rsS = null;
+
+int carteiraId = 0;
+double saldoAtual = 0.0;
+
+try {
+    conS = dbConnect();
+    psS = conS.prepareStatement(
+        "SELECT id, saldo FROM carteiras WHERE utilizador_id=? AND tipo='UTILIZADOR' LIMIT 1"
+    );
+    psS.setInt(1, userId);
+    rsS = dbQuery(conS, psS);
+
+    if (rsS.next()) {
+        carteiraId = rsS.getInt("id");
+        saldoAtual = rsS.getDouble("saldo");
+    }
+} catch (Exception e) {
+    out.print("Erro ao carregar saldo: " + e.getMessage());
+} finally {
+    dbClose(rsS, psS, conS);
+}
+%>
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -107,7 +137,7 @@ try {
       <a class="active" href="cliente.jsp">Dashboard</a>
       <a href="#" id="abrirDadosLink">dados pessoais</a>
       <a href="#" id="abrirProdutosLink">Consultar produtos</a>
-      <a href="#">Saldo</a>
+      <a href="#" id="abrirSaldoLink">Saldo</a>
       <a href="#">Encomendas</a>
       <a href="#">Carteira</a>
       <a href="logout.jsp">logout</a>
@@ -304,7 +334,68 @@ dbClose(rsP, psP, conP);
 </script>
 
 
+<!-- MODAL: Gestão de Saldo -->
+<div id="saldoModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <h2>o seu dinheiro </h2>
+      <a href="#" class="modal-close" id="fecharSaldoLink">✕</a>
+    </div>
 
+    <!-- Consultar -->
+    <div class="saldo-box">
+      <p class="saldo-label">Saldo atual</p>
+      <p class="saldo-valor"><%= String.format("%.2f €", saldoAtual) %></p>
+    </div>
+
+    <!-- Adicionar saldo -->
+    <form action="cliente_saldo.jsp" method="POST" class="saldo-form">
+      <input type="hidden" name="acao" value="ADICIONAR">
+      <label>Adicionar saldo (€)</label>
+      <input type="number" name="valor" required>
+      <button type="submit" class="btn-submit">Adicionar</button>
+    </form>
+
+    <!-- Levantar saldo -->
+    <form action="cliente_saldo.jsp" method="POST" class="saldo-form">
+      <input type="hidden" name="acao" value="LEVANTAR">
+      <label>Levantar saldo (€)</label>
+      <input type="number" name="valor" required>
+      <button type="submit" class="btn-submit danger">Levantar</button>
+    </form>
+
+    <p class="modal-note">
+      * As operações são registadas em auditoria (movimentos da carteira).
+    </p>
+  </div>
+</div>
+
+<script>
+  const saldoModal = document.getElementById("saldoModal");
+  const abrirSaldo = document.getElementById("abrirSaldoLink");
+  const fecharSaldo = document.getElementById("fecharSaldoLink");
+
+  if (abrirSaldo) {
+    abrirSaldo.addEventListener("click", function(e){
+      e.preventDefault();
+      saldoModal.classList.add("show");
+    });
+  }
+  if (fecharSaldo) {
+    fecharSaldo.addEventListener("click", function(e){
+      e.preventDefault();
+      saldoModal.classList.remove("show");
+    });
+  }
+
+  saldoModal.addEventListener("click", function(e){
+    if(e.target.id === "saldoModal") saldoModal.classList.remove("show");
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") saldoModal.classList.remove("show");
+  });
+</script>
 
 </body>
 </html>
