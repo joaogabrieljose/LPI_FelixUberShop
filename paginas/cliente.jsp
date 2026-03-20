@@ -50,13 +50,35 @@ try {
 %>
 
 
+<%-- Buscar produtos na BD --%>
+
+<%
+Connection conP = null;
+PreparedStatement psP = null;
+ResultSet rsP = null;
+
+try {
+    conP = dbConnect();
+    psP = conP.prepareStatement(
+        "SELECT id, nome, descricao, categoria, preco " +
+        "FROM produtos WHERE ativo=1 ORDER BY categoria, nome"
+    );
+    rsP = dbQuery(conP, psP);
+} catch (Exception e) {
+    out.print("Erro ao carregar produtos: " + e.getMessage());
+}
+%>
+
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Dashboard Cliente - FelixUberShop</title>
   <link rel="stylesheet" href="cliente.css">
-  <link rel="stylesheet" href="dados_pessoais.css">
+  <link rel="stylesheet" href="cliente_dados_pessoais.css">
+  <link rel="stylesheet" href="cliente_produtos.css">
+
 
 </head>
 <body>
@@ -82,9 +104,9 @@ try {
   <!-- Menu lateral (usa o teu nav class="menu") -->
   <aside class="dash-side">
     <nav class="menu">
-      <a class="active" href="cliente.jsp">logout</a>
+      <a class="active" href="cliente.jsp">Dashboard</a>
       <a href="#" id="abrirDadosLink">dados pessoais</a>
-      <a href="#">Consultar produtos</a>
+      <a href="#" id="abrirProdutosLink">Consultar produtos</a>
       <a href="#">Saldo</a>
       <a href="#">Encomendas</a>
       <a href="#">Carteira</a>
@@ -204,6 +226,80 @@ try {
 
   document.addEventListener("keydown", function(e){
     if(e.key === "Escape") dadosModal.classList.remove("show");
+  });
+</script>
+
+
+
+<!-- MODAL: Consultar Produtos -->
+<div id="produtosModal" class="modal">
+  <div class="modal-box modal-wide">
+    <div class="modal-top">
+      <h2>Produtos disponíveis</h2>
+      <a href="#" class="modal-close" id="fecharProdutosLink">✕</a>
+    </div>
+
+    <div class="produtos-modal-grid">
+      <%
+        if (rsP != null) {
+          while (rsP.next()) {
+            int id = rsP.getInt("id");
+            String nomeP = rsP.getString("nome");
+            String descP = rsP.getString("descricao");
+            String catP = rsP.getString("categoria");
+            double precoP = rsP.getDouble("preco");
+      %>
+            <article class="produto-card">
+              <p class="produto-cat"><%= (catP != null ? catP : "Geral") %></p>
+              <h3 class="produto-nome"><%= nomeP %></h3>
+              <p class="produto-desc"><%= (descP != null ? descP : "") %></p>
+              <div class="produto-footer">
+                <span class="produto-preco"><%= String.format("%.2f €", precoP) %></span>
+                <button class="btn-adicionar" type="button">Adicionar</button>
+              </div>
+            </article>
+      <%
+          }
+        } else {
+      %>
+          <p>Não foi possível carregar os produtos.</p>
+      <%
+        }
+      %>
+    </div>
+  </div>
+</div>
+
+<%-- Fechar recursos dos produtos (agora sim) --%>
+<%
+dbClose(rsP, psP, conP);
+%>
+
+<script id="fix-produtos-modal">
+  const produtosModal = document.getElementById("produtosModal");
+  const abrirProdutos = document.getElementById("abrirProdutosLink");
+  const fecharProdutos = document.getElementById("fecharProdutosLink");
+
+  if (abrirProdutos) {
+    abrirProdutos.addEventListener("click", function(e){
+      e.preventDefault();
+      produtosModal.classList.add("show");
+    });
+  }
+
+  if (fecharProdutos) {
+    fecharProdutos.addEventListener("click", function(e){
+      e.preventDefault();
+      produtosModal.classList.remove("show");
+    });
+  }
+
+  produtosModal.addEventListener("click", function(e){
+    if (e.target.id === "produtosModal") produtosModal.classList.remove("show");
+  });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") produtosModal.classList.remove("show");
   });
 </script>
 
