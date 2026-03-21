@@ -14,3 +14,35 @@
 .btn-submit:hover{ background:#16a34a; }
 
 .modal-note{ margin-top:12px; font-size:13px; color:#6b7280; }
+
+
+/* Encomendas */
+
+.encomendas-top-actions{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+.inline-form{ display:inline; }
+
+.encomendas-table .row{
+  display:grid;
+  grid-template-columns: 1.1fr 0.8fr 0.7fr 1fr 1.4fr;
+  gap:10px;
+  padding:10px 12px;
+  border-top:1px solid #eef0f3;
+}
+.encomendas-table .row.head{
+  background:#f3f4f6;
+  font-weight:900;
+  border-top:none;
+  border-radius:12px 12px 0 0;
+}
+
+.acoes{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn-mini{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  padding:6px 10px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:800;
+}
+.btn-mini.outline{ border:2px solid #2f6b1f; color:#2f6b1f; }
+.btn-mini.danger{ border:2px solid #ef4444; color:#ef4444; }

@@ -100,6 +100,27 @@ try {
 %>
 
 
+
+<%-- Consultar encomendas do cliente --%>
+<%
+Connection conE = null;
+PreparedStatement psE = null;
+ResultSet rsE = null;
+
+try {
+    conE = dbConnect();
+    psE = conE.prepareStatement(
+        "SELECT id, identificador, estado, total, criado_em " +
+        "FROM encomendas WHERE cliente_id=? ORDER BY criado_em DESC LIMIT 20"
+    );
+    psE.setInt(1, userId);
+    rsE = dbQuery(conE, psE);
+} catch (Exception e) {
+    out.print("Erro ao carregar encomendas: " + e.getMessage());
+}
+%>
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,8 +129,6 @@ try {
   <link rel="stylesheet" href="cliente.css">
   <link rel="stylesheet" href="cliente_dados_pessoais.css">
   <link rel="stylesheet" href="cliente_produtos.css">
-
-
 </head>
 <body>
 
@@ -138,7 +157,7 @@ try {
       <a href="#" id="abrirDadosLink">dados pessoais</a>
       <a href="#" id="abrirProdutosLink">Consultar produtos</a>
       <a href="#" id="abrirSaldoLink">Saldo</a>
-      <a href="#">Encomendas</a>
+      <a href="#" id="abrirEncomendasLink">Encomendas</a>
       <a href="#">Carteira</a>
       <a href="logout.jsp">logout</a>
     </nav>
@@ -334,6 +353,8 @@ dbClose(rsP, psP, conP);
 </script>
 
 
+
+
 <!-- MODAL: Gestão de Saldo -->
 <div id="saldoModal" class="modal">
   <div class="modal-box">
@@ -396,6 +417,110 @@ dbClose(rsP, psP, conP);
     if(e.key === "Escape") saldoModal.classList.remove("show");
   });
 </script>
+
+
+
+
+
+<!-- MODAL: Gestão de Encomendas -->
+<div id="encomendasModal" class="modal">
+  <div class="modal-box modal-wide">
+    <div class="modal-top">
+      <h2>Gestão de Encomendas</h2>
+      <a href="#" class="modal-close" id="fecharEncomendasLink">✕</a>
+    </div>
+
+    <div class="encomendas-top-actions">
+      <form action="cliente_encomenda.jsp" method="POST" class="inline-form">
+        <input type="hidden" name="acao" value="NOVA">
+        <button type="submit" class="btn-submit">+ Nova encomenda</button>
+      </form>
+
+      <p class="modal-note">
+        * Editar/Cancelar apenas encomendas em estado <strong>RASCUNHO</strong>.
+      </p>
+    </div>
+
+    <div class="encomendas-table">
+      <div class="row head">
+        <div>Código</div><div>Estado</div><div>Total</div><div>Data</div><div>Ações</div>
+      </div>
+
+      <%
+        if (rsE != null) {
+          boolean tem = false;
+          while (rsE.next()) {
+            tem = true;
+            long encId = rsE.getLong("id");
+            String cod = rsE.getString("identificador");
+            String estado = rsE.getString("estado");
+            double total = rsE.getDouble("total");
+            Timestamp data = rsE.getTimestamp("criado_em");
+      %>
+            <div class="row">
+              <div><strong><%= cod %></strong></div>
+              <div><%= estado %></div>
+              <div><%= String.format("%.2f €", total) %></div>
+              <div><%= (data != null ? data.toString().substring(0,16) : "") %></div>
+
+              <div class="acoes">
+                <!-- Consultar detalhes (abre outra página ou outro modal) -->
+                <form action="cliente_encomenda_detalhes.jsp" method="GET" class="inline-form">
+                  <input type="hidden" name="id" value="<%= encId %>">
+                  <button type="submit" class="btn-mini">Ver</button>
+                </form>
+
+                <% if ("RASCUNHO".equalsIgnoreCase(estado)) { %>
+                  <!-- Editar: abre detalhes para editar itens -->
+                  <form action="cliente_encomenda_detalhes.jsp" method="GET" class="inline-form">
+                    <input type="hidden" name="id" value="<%= encId %>">
+                    <input type="hidden" name="modo" value="editar">
+                    <button type="submit" class="btn-mini outline">Editar</button>
+                  </form>
+
+                  <!-- Cancelar -->
+                  <form action="cliente_encomenda.jsp" method="POST" class="inline-form">
+                    <input type="hidden" name="acao" value="CANCELAR">
+                    <input type="hidden" name="id" value="<%= encId %>">
+                    <button type="submit" class="btn-mini danger">Cancelar</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+      <%
+          }
+          if (!tem) {
+      %>
+            <div class="row"><div style="grid-column:1/-1;">Ainda não tem encomendas.</div></div>
+      <%
+          }
+        } else {
+      %>
+          <div class="row"><div style="grid-column:1/-1;">Erro ao carregar encomendas.</div></div>
+      <%
+        }
+      %>
+    </div>
+  </div>
+</div>
+
+<%-- Fechar recursos da consulta de encomendas --%>
+<%
+dbClose(rsE, psE, conE);
+%>
+
+<script>
+  const encomendasModal = document.getElementById("encomendasModal");
+  const abrirEnc = document.getElementById("abrirEncomendasLink");
+  const fecharEnc = document.getElementById("fecharEncomendasLink");
+
+  if (abrirEnc) abrirEnc.addEventListener("click", (e)=>{ e.preventDefault(); encomendasModal.classList.add("show"); });
+  if (fecharEnc) fecharEnc.addEventListener("click", (e)=>{ e.preventDefault(); encomendasModal.classList.remove("show"); });
+
+  encomendasModal.addEventListener("click", (e)=>{ if(e.target.id==="encomendasModal") encomendasModal.classList.remove("show"); });
+</script>
+
+
 
 </body>
 </html>
