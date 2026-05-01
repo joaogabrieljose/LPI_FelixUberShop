@@ -71,7 +71,6 @@ try {
 
   <h2>Encomenda <%= codigo %></h2>
   <p><strong>Estado:</strong> <%= estado %> | <strong>Total:</strong> <%= String.format("%.2f €", total) %></p>
-  <p><a href="cliente.jsp">← Voltar ao Dashboard</a></p>
 
   <h3>Itens</h3>
   <div class="dash-table">
@@ -97,7 +96,6 @@ try {
             <form action="cliente_encomenda_item_remover.jsp" method="POST" style="display:inline;">
               <input type="hidden" name="encomenda_id" value="<%= encomendaId %>">
               <input type="hidden" name="item_id" value="<%= itemId %>">
-              <button type="submit">Remover</button>
             </form>
           <% } else { %>
             —
@@ -112,22 +110,10 @@ try {
     <%
       }
     %>
+    
   </div>
-
-  <% if ("RASCUNHO".equalsIgnoreCase(estado)) { %>
-    <h3>Adicionar produto</h3>
-    <form action="cliente_encomenda.jsp" method="POST">
-      <input type="hidden" name="encomenda_id" value="<%= encomendaId %>">
-
-      <label>ID do produto</label>
-      <input type="text" name="produto_id" required>
-
-      <label>Quantidade</label>
-      <input type="number" name="quantidade" min="1" value="1" required>
-
-      <button type="submit">Adicionar</button>
-    </form>
-  <% } %>
+   <p><a href="cliente.jsp"><-Voltar ao Dashboard</a></p>
+  
 
 </body>
 </html>

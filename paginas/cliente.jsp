@@ -372,7 +372,7 @@ dbClose(rsP, psP, conP);
     <!-- Adicionar saldo -->
     <form action="cliente_saldo.jsp" method="POST" class="saldo-form">
       <input type="hidden" name="acao" value="ADICIONAR">
-      <label>Adicionar saldo (€)</label>
+      <label>Depositar saldo (€)</label>
       <input type="number" name="valor" required>
       <button type="submit" class="btn-submit">Adicionar</button>
     </form>
@@ -465,7 +465,7 @@ dbClose(rsP, psP, conP);
 
               <div class="acoes">
                 <!-- Consultar detalhes (abre outra página ou outro modal) -->
-                <form action="cliente_encomenda_detalhes.jsp" method="GET" class="inline-form">
+                <form action="cliente_encomenda_ver.jsp" method="GET" class="inline-form">
                   <input type="hidden" name="id" value="<%= encId %>">
                   <button type="submit" class="btn-mini">Ver</button>
                 </form>
@@ -479,7 +479,7 @@ dbClose(rsP, psP, conP);
                   </form>
 
                   <!-- Cancelar -->
-                  <form action="cliente_encomenda.jsp" method="POST" class="inline-form">
+                  <form action="cliente.jsp" method="POST" class="inline-form">
                     <input type="hidden" name="acao" value="CANCELAR">
                     <input type="hidden" name="id" value="<%= encId %>">
                     <button type="submit" class="btn-mini danger">Cancelar</button>

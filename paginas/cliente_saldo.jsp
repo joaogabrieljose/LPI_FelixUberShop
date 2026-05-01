@@ -30,7 +30,7 @@ try {
     con = dbConnect();
     con.setAutoCommit(false);
 
-    // 1) obter carteira do utilizador
+    // 1 obter carteira do utilizador
 
     ps = con.prepareStatement("SELECT id, saldo FROM carteiras WHERE utilizador_id=? AND tipo='UTILIZADOR' LIMIT 1");
     ps.setInt(1, userId);
@@ -53,7 +53,7 @@ try {
         return;
     }
 
-    // 2) atualizar saldo
+    // 2 atualizar saldo
 
     if ("ADICIONAR".equalsIgnoreCase(acao)) {
         ps = con.prepareStatement("UPDATE carteiras SET saldo = saldo + ? WHERE id=?");
@@ -62,7 +62,7 @@ try {
         dbUpdate(con, ps);
         dbClose(null, ps, null);
 
-        // 3) auditoria
+        // 3 auditoria
         ps = con.prepareStatement(
           "INSERT INTO movimentos_carteira(tipo_operacao, valor, carteira_origem_id, carteira_destino_id, descricao) " +
           "VALUES ('ADICIONAR', ?, NULL, ?, 'Adicionar saldo pelo cliente')"
