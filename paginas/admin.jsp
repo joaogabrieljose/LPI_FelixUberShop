@@ -85,7 +85,6 @@ try {
 
   <div class="dash-user">
     <span class="pill">🛠️ <%= username %></span>
-    <a class="pill" href="logout.jsp">Logout</a>
   </div>
 </header>
 
@@ -210,7 +209,7 @@ try {
     <!-- 2) ADICIONAR -->
     <section id="tab-adicionar" class="tab-pane">
       <h3>Novo Produto</h3>
-      <form action="admin_produto_create.jsp" method="POST" class="form-grid">
+      <form action="admin_produto.jsp" method="POST" class="form-grid">
         <div>
           <label>Nome</label>
           <input type="text" name="nome" required>
