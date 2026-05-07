@@ -2,7 +2,6 @@
 <%@ page import="java.sql.*" %>
 <%@ include file="../basedados/basedados.h" %>
 
-
 <%-- Restrição de acesso: apenas CLIENTE --%>
 <%
 String perfil = (String) session.getAttribute("perfil");
@@ -15,9 +14,6 @@ if (perfil == null || userId == null || !perfil.equalsIgnoreCase("CLIENTE")) {
 
 String username = (String) session.getAttribute("username");
 %>
-
-
-
 
 <%-- Buscar dados pessoais na BD --%>
 <%
@@ -49,9 +45,7 @@ try {
 }
 %>
 
-
-<%-- Buscar produtos na BD --%>
-
+<%-- Buscar produtos na BD (para o modal) --%>
 <%
 Connection conP = null;
 PreparedStatement psP = null;
@@ -68,8 +62,6 @@ try {
     out.print("Erro ao carregar produtos: " + e.getMessage());
 }
 %>
-
-
 
 <%-- Consultar saldo da carteira do utilizador --%>
 <%
@@ -99,9 +91,7 @@ try {
 }
 %>
 
-
-
-<%-- Consultar encomendas do cliente --%>
+<%-- Consultar encomendas do cliente (para o modal de encomendas) --%>
 <%
 Connection conE = null;
 PreparedStatement psE = null;
@@ -120,6 +110,45 @@ try {
 }
 %>
 
+<%-- COUNT de encomendas (para o card) --%>
+<%
+int totalEncomendas = 0;
+
+Connection conCnt = null;
+PreparedStatement psCnt = null;
+ResultSet rsCnt = null;
+
+try {
+    conCnt = dbConnect();
+    psCnt = conCnt.prepareStatement("SELECT COUNT(*) AS total FROM encomendas WHERE cliente_id=?");
+    psCnt.setInt(1, userId);
+    rsCnt = dbQuery(conCnt, psCnt);
+    if (rsCnt.next()) totalEncomendas = rsCnt.getInt("total");
+} catch (Exception e) {
+    out.print("Erro ao contar encomendas: " + e.getMessage());
+} finally {
+    dbClose(rsCnt, psCnt, conCnt);
+}
+%>
+
+<%-- Últimas encomendas (para a tabela do dashboard) --%>
+<%
+Connection conUlt = null;
+PreparedStatement psUlt = null;
+ResultSet rsUlt = null;
+
+try {
+    conUlt = dbConnect();
+    psUlt = conUlt.prepareStatement(
+        "SELECT identificador, estado, total, criado_em " +
+        "FROM encomendas WHERE cliente_id=? ORDER BY criado_em DESC LIMIT 5"
+    );
+    psUlt.setInt(1, userId);
+    rsUlt = dbQuery(conUlt, psUlt);
+} catch (Exception e) {
+    out.print("Erro ao carregar últimas encomendas: " + e.getMessage());
+}
+%>
 
 <!DOCTYPE html>
 <html>
@@ -135,8 +164,8 @@ try {
 <header class="dash-top">
   <div class="dash-brand">
     <a class="brand" href="index.jsp">
-	    <img src="legumes.png" class="logo" alt="FelixUberShop">
-	</a>
+      <img src="legumes.png" class="logo" alt="FelixUberShop">
+    </a>
     <div>
       <h1>FelixUberShop</h1>
       <p>Área do Cliente</p>
@@ -150,79 +179,95 @@ try {
 
 <div class="dash-layout">
 
-  <!-- Menu lateral (usa o teu nav class="menu") -->
   <aside class="dash-side">
     <nav class="menu">
       <a class="active" href="cliente.jsp">Dashboard</a>
       <a href="#" id="abrirDadosLink">dados pessoais</a>
       <a href="#" id="abrirProdutosLink">Consultar produtos</a>
-      <a href="#" id="abrirSaldoLink">Saldo</a>
+      <a href="#" id="abrirSaldoLink">Carteira</a>
       <a href="#" id="abrirEncomendasLink">Encomendas</a>
-      <a href="#">Carteira</a>
       <a href="logout.jsp">logout</a>
     </nav>
   </aside>
 
-  <!-- Conteúdo principal -->
   <main class="dash-main">
 
-    <!-- Hero / destaque (tipo estrutura de dashboard) -->
     <section class="dash-hero">
       <div class="dash-hero-text">
         <h2>Bem-vindo(a), <%= username %>!</h2>
         <p>Veja as suas encomendas, saldo e promoções da semana num só lugar.</p>
         <div class="dash-actions">
-          <a class="btn" href="#">Ver Produtos</a>
+          <a class="btn" href="#" id="abrirProdutosLinkHero">Ver Produtos</a>
           <a class="btn outline" href="#">Ver Promoções</a>
         </div>
       </div>
     </section>
 
-    <!-- Cards rápidos (resumo) -->
+    <%-- Cards dinâmicos (saldo + encomendas) --%>
     <section class="dash-cards">
       <article class="dash-card">
         <h3>Saldo</h3>
-        <p class="dash-big">€ 20,00</p>
-        <p class="dash-muted">Carteira do cliente (exemplo)</p>
+        <p class="dash-big"><%= String.format("€ %.2f", saldoAtual) %></p>
+        <p class="dash-muted">Carteira do cliente</p>
       </article>
 
       <article class="dash-card">
         <h3>Encomendas</h3>
-        <p class="dash-big">2</p>
-        <p class="dash-muted">Encomendas feitas (exemplo)</p>
+        <p class="dash-big"><%= totalEncomendas %></p>
+        <p class="dash-muted">Encomendas feitas</p>
       </article>
 
       <article class="dash-card">
         <h3>Promoções</h3>
-        <p class="dash-big">3</p>
+        <p class="dash-big">0</p>
         <p class="dash-muted">Ativas esta semana</p>
       </article>
     </section>
 
-    <!-- Secção “últimas encomendas” (estrutura tipo tabela simples) -->
+    <%-- Últimas encomendas (dinâmico) --%>
     <section class="dash-section">
       <div class="dash-section-top">
         <h3>Últimas encomendas</h3>
-        <a href="#" class="link">Ver todas</a>
+        <a href="#" class="link" id="abrirEncomendasLink2">Ver todas</a>
       </div>
 
       <div class="dash-table">
         <div class="row head">
           <div>ID</div><div>Estado</div><div>Total</div><div>Data</div>
         </div>
-        <div class="row">
-          <div>AB12CD34EF56</div><div>PAGA</div><div>€ 12,45</div><div>2026-03-19</div>
-        </div>
-        <div class="row">
-          <div>XY98ZA12MN34</div><div>SUBMETIDA</div><div>€ 7,10</div><div>2026-03-18</div>
-        </div>
+
+        <%
+          boolean temUlt = false;
+          if (rsUlt != null) {
+            while (rsUlt.next()) {
+              temUlt = true;
+              String cod = rsUlt.getString("identificador");
+              String est = rsUlt.getString("estado");
+              double tot = rsUlt.getDouble("total");
+              Timestamp dt = rsUlt.getTimestamp("criado_em");
+        %>
+              <div class="row">
+                <div><%= cod %></div>
+                <div><%= est %></div>
+                <div><%= String.format("€ %.2f", tot) %></div>
+                <div><%= (dt != null ? dt.toString().substring(0,10) : "") %></div>
+              </div>
+        <%
+            }
+          }
+          if (!temUlt) {
+        %>
+            <div class="row">
+              <div style="grid-column:1/-1;">Ainda não tem encomendas.</div>
+            </div>
+        <%
+          }
+        %>
       </div>
     </section>
 
   </main>
-
 </div>
-
 
 <!-- MODAL: Dados Pessoais -->
 <div id="dadosModal" class="modal">
@@ -259,12 +304,12 @@ try {
   const abrirDados = document.getElementById("abrirDadosLink");
   const fecharDados = document.getElementById("fecharDadosLink");
 
-  abrirDados.addEventListener("click", function(e){
+  if (abrirDados) abrirDados.addEventListener("click", function(e){
     e.preventDefault();
     dadosModal.classList.add("show");
   });
 
-  fecharDados.addEventListener("click", function(e){
+  if (fecharDados) fecharDados.addEventListener("click", function(e){
     e.preventDefault();
     dadosModal.classList.remove("show");
   });
@@ -278,8 +323,6 @@ try {
   });
 </script>
 
-
-
 <!-- MODAL: Consultar Produtos -->
 <div id="produtosModal" class="modal">
   <div class="modal-box modal-wide">
@@ -292,7 +335,6 @@ try {
       <%
         if (rsP != null) {
           while (rsP.next()) {
-            int id = rsP.getInt("id");
             String nomeP = rsP.getString("nome");
             String descP = rsP.getString("descricao");
             String catP = rsP.getString("categoria");
@@ -304,7 +346,7 @@ try {
               <p class="produto-desc"><%= (descP != null ? descP : "") %></p>
               <div class="produto-footer">
                 <span class="produto-preco"><%= String.format("%.2f €", precoP) %></span>
-                <button class="btn-adicionar" type="button">Adicionar</button>
+                
               </div>
             </article>
       <%
@@ -319,7 +361,6 @@ try {
   </div>
 </div>
 
-<%-- Fechar recursos dos produtos (agora sim) --%>
 <%
 dbClose(rsP, psP, conP);
 %>
@@ -327,14 +368,16 @@ dbClose(rsP, psP, conP);
 <script id="fix-produtos-modal">
   const produtosModal = document.getElementById("produtosModal");
   const abrirProdutos = document.getElementById("abrirProdutosLink");
+  const abrirProdutosHero = document.getElementById("abrirProdutosLinkHero");
   const fecharProdutos = document.getElementById("fecharProdutosLink");
 
-  if (abrirProdutos) {
-    abrirProdutos.addEventListener("click", function(e){
-      e.preventDefault();
-      produtosModal.classList.add("show");
-    });
+  function abrirProdutosFn(e){
+    e.preventDefault();
+    produtosModal.classList.add("show");
   }
+
+  if (abrirProdutos) abrirProdutos.addEventListener("click", abrirProdutosFn);
+  if (abrirProdutosHero) abrirProdutosHero.addEventListener("click", abrirProdutosFn);
 
   if (fecharProdutos) {
     fecharProdutos.addEventListener("click", function(e){
@@ -352,36 +395,30 @@ dbClose(rsP, psP, conP);
   });
 </script>
 
-
-
-
-<!-- MODAL: Gestão de Saldo -->
+<!-- MODAL: Carteira -->
 <div id="saldoModal" class="modal">
   <div class="modal-box">
     <div class="modal-top">
-      <h2>o seu dinheiro </h2>
+      <h2>Carteira</h2>
       <a href="#" class="modal-close" id="fecharSaldoLink">✕</a>
     </div>
 
-    <!-- Consultar -->
     <div class="saldo-box">
       <p class="saldo-label">Saldo atual</p>
       <p class="saldo-valor"><%= String.format("%.2f €", saldoAtual) %></p>
     </div>
 
-    <!-- Adicionar saldo -->
     <form action="cliente_saldo.jsp" method="POST" class="saldo-form">
       <input type="hidden" name="acao" value="ADICIONAR">
       <label>Depositar saldo (€)</label>
-      <input type="number" name="valor" required>
+      <input type="number" name="valor" step="0.01" min="0.01" required>
       <button type="submit" class="btn-submit">Adicionar</button>
     </form>
 
-    <!-- Levantar saldo -->
     <form action="cliente_saldo.jsp" method="POST" class="saldo-form">
       <input type="hidden" name="acao" value="LEVANTAR">
       <label>Levantar saldo (€)</label>
-      <input type="number" name="valor" required>
+      <input type="number" name="valor" step="0.01" min="0.01" required>
       <button type="submit" class="btn-submit danger">Levantar</button>
     </form>
 
@@ -418,22 +455,18 @@ dbClose(rsP, psP, conP);
   });
 </script>
 
-
-
-
-
 <!-- MODAL: Gestão de Encomendas -->
 <div id="encomendasModal" class="modal">
-  <div class="modal-box modal-wide">
+  <div class="modal-box modal-xl">
     <div class="modal-top">
       <h2>Gestão de Encomendas</h2>
       <a href="#" class="modal-close" id="fecharEncomendasLink">✕</a>
     </div>
 
     <div class="encomendas-top-actions">
-     <form action="cliente_encomenda_nova.jsp" method="POST" style="display:inline;">
-      <button type="submit" class="btn-submit">+ Nova encomenda</button>
-    </form>
+      <form action="cliente_encomenda_nova.jsp" method="POST" style="display:inline;">
+        <button type="submit" class="btn-submit">+ Nova encomenda</button>
+      </form>
       <p class="modal-note">
         * Editar/Cancelar apenas encomendas em estado <strong>RASCUNHO</strong>.
       </p>
@@ -451,33 +484,36 @@ dbClose(rsP, psP, conP);
             tem = true;
             long encId = rsE.getLong("id");
             String cod = rsE.getString("identificador");
-            String estado = rsE.getString("estado");
-            double total = rsE.getDouble("total");
+            String est = rsE.getString("estado");
+            double tot = rsE.getDouble("total");
             Timestamp data = rsE.getTimestamp("criado_em");
       %>
             <div class="row">
               <div><strong><%= cod %></strong></div>
-              <div><%= estado %></div>
-              <div><%= String.format("%.2f €", total) %></div>
+              <div><%= est %></div>
+              <div><%= String.format("%.2f €", tot) %></div>
               <div><%= (data != null ? data.toString().substring(0,16) : "") %></div>
 
               <div class="acoes">
-                <!-- Consultar detalhes (abre outra página ou outro modal) -->
                 <form action="cliente_encomenda_ver.jsp" method="GET" class="inline-form">
                   <input type="hidden" name="id" value="<%= encId %>">
                   <button type="submit" class="btn-mini">Ver</button>
                 </form>
 
-                <% if ("RASCUNHO".equalsIgnoreCase(estado)) { %>
-                  <!-- Editar: abre detalhes para editar itens -->
-                  <form action="cliente_encomenda_detalhes.jsp" method="GET">
+                <% if ("RASCUNHO".equalsIgnoreCase(est)) { %>
+                  <form action="cliente_encomenda_detalhes.jsp" method="GET" class="inline-form">
                     <input type="hidden" name="id" value="<%= encId %>">
                     <button type="submit" class="btn-mini">Editar</button>
-
                   </form>
-                  <!-- Cancelar -->
-                  <form action="cliente.jsp" method="POST" class="inline-form">
-                    <input type="hidden" name="acao" value="CANCELAR">
+
+                  <% if (tot > 0) { %>
+                    <form action="cliente_paga_encomenda.jsp" method="POST" class="inline-form">
+                      <input type="hidden" name="id" value="<%= encId %>">
+                      <button type="submit" class="btn-mini pay">Pagar</button>
+                    </form>
+                  <% } %>
+
+                  <form action="#" method="POST" class="inline-form">
                     <input type="hidden" name="id" value="<%= encId %>">
                     <button type="submit" class="btn-mini danger">Cancelar</button>
                   </form>
@@ -501,23 +537,26 @@ dbClose(rsP, psP, conP);
   </div>
 </div>
 
-<%-- Fechar recursos da consulta de encomendas --%>
 <%
 dbClose(rsE, psE, conE);
+dbClose(rsUlt, psUlt, conUlt);
 %>
 
 <script>
   const encomendasModal = document.getElementById("encomendasModal");
   const abrirEnc = document.getElementById("abrirEncomendasLink");
+  const abrirEnc2 = document.getElementById("abrirEncomendasLink2");
   const fecharEnc = document.getElementById("fecharEncomendasLink");
 
-  if (abrirEnc) abrirEnc.addEventListener("click", (e)=>{ e.preventDefault(); encomendasModal.classList.add("show"); });
+  function abrirEncFn(e){ e.preventDefault(); encomendasModal.classList.add("show"); }
+
+  if (abrirEnc) abrirEnc.addEventListener("click", abrirEncFn);
+  if (abrirEnc2) abrirEnc2.addEventListener("click", abrirEncFn);
+
   if (fecharEnc) fecharEnc.addEventListener("click", (e)=>{ e.preventDefault(); encomendasModal.classList.remove("show"); });
 
   encomendasModal.addEventListener("click", (e)=>{ if(e.target.id==="encomendasModal") encomendasModal.classList.remove("show"); });
 </script>
-
-
 
 </body>
 </html>

@@ -120,7 +120,7 @@ try {
 
         <div>
           <% if ("RASCUNHO".equalsIgnoreCase(estado)) { %>
-            <form action="cliente_encomenda_item_remover.jsp" method="POST" style="display:inline;">
+            <form action="cliente_encomenda_remove.jsp" method="POST" style="display:inline;">
               <input type="hidden" name="encomenda_id" value="<%= encomendaId %>">
               <input type="hidden" name="item_id" value="<%= itemId %>">
               <button type="submit">Remover</button>

@@ -198,3 +198,47 @@ select{
 }
 
 
+#encomendasModal .modal-box.modal-xl{
+  width: 60vw !important;      /* 60% do ecrã */
+  max-width: 900px !important; /* ajusta se quiseres */
+  max-height: 90vh !important;
+  overflow: auto !important;
+}
+
+/* dá mais espaço à coluna Ações */
+.encomendas-table .row{
+  display:grid;
+  grid-template-columns: 1.4fr 0.9fr 0.8fr 1.2fr 2.2fr;
+  gap: 10px;
+  align-items: center;
+}
+
+/* mantém os botões na mesma linha */
+.encomendas-table .acoes{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+}
+
+/* botões mais pequenos para caber */
+.encomendas-table .btn-mini{
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 8px;
+}
+
+/* estilo do pagar */
+.encomendas-table .btn-mini.pay{
+  border: 2px solid #22c55e;
+  color: #22c55e;
+  font-weight: 900;
+}
+.encomendas-table .btn-mini.pay:hover{
+  background:#22c55e;
+  color:#0b1220;
+}
+
+
