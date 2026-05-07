@@ -189,4 +189,12 @@
   .dash-layout{ grid-template-columns: 1fr; }
 }
 
+select{
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #e5e7eb;
+  width:100%;
+  margin-bottom:12px;
+}
+
 

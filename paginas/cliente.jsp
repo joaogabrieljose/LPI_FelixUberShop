@@ -431,11 +431,9 @@ dbClose(rsP, psP, conP);
     </div>
 
     <div class="encomendas-top-actions">
-      <form action="cliente_encomenda.jsp" method="POST" class="inline-form">
-        <input type="hidden" name="acao" value="NOVA">
-        <button type="submit" class="btn-submit">+ Nova encomenda</button>
-      </form>
-
+     <form action="cliente_encomenda_nova.jsp" method="POST" style="display:inline;">
+      <button type="submit" class="btn-submit">+ Nova encomenda</button>
+    </form>
       <p class="modal-note">
         * Editar/Cancelar apenas encomendas em estado <strong>RASCUNHO</strong>.
       </p>
@@ -472,12 +470,11 @@ dbClose(rsP, psP, conP);
 
                 <% if ("RASCUNHO".equalsIgnoreCase(estado)) { %>
                   <!-- Editar: abre detalhes para editar itens -->
-                  <form action="cliente_encomenda_detalhes.jsp" method="GET" class="inline-form">
+                  <form action="cliente_encomenda_detalhes.jsp" method="GET">
                     <input type="hidden" name="id" value="<%= encId %>">
-                    <input type="hidden" name="modo" value="editar">
-                    <button type="submit" class="btn-mini outline">Editar</button>
-                  </form>
+                    <button type="submit" class="btn-mini">Editar</button>
 
+                  </form>
                   <!-- Cancelar -->
                   <form action="cliente.jsp" method="POST" class="inline-form">
                     <input type="hidden" name="acao" value="CANCELAR">
