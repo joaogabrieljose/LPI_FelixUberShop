@@ -99,6 +99,23 @@ try {
 }
 %>
 
+<%
+Connection conU = null;
+PreparedStatement psU = null;
+ResultSet rsU = null;
+
+try {
+  conU = dbConnect();
+  psU = conU.prepareStatement(
+    "SELECT id, username, perfil, ativo, nome, email, telefone, morada " +
+    "FROM utilizadores ORDER BY id DESC LIMIT 100"
+  );
+  rsU = dbQuery(conU, psU);
+} catch(Exception e){
+  out.print("Erro ao carregar utilizadores: " + e.getMessage());
+}
+%>
+
 
 
 <!DOCTYPE html>
@@ -133,7 +150,7 @@ try {
       <a href="#" id="abrirProdutosAdmin">Gerir Produtos</a>
       <a href="#" id="abrirPromocoesAdmin">Gerir Promoções</a>
       <a href="#" id="abrirEncomendasAdmin">Gerir Encomendas</a>
-      <a href="#">Gerir Utilizadores</a>
+      <a href="#" id="abrirUtilizadoresAdmin">Gerir Utilizadores</a>
       <a href="#">Carteira da Loja</a>
       <a href="logout.jsp">Logout</a>
     </nav>
@@ -227,7 +244,7 @@ try {
 
     <section id="tab-adicionar-prod" class="tab-pane">
       <h3>Novo Produto</h3>
-      <!-- ✅ action corrigido -->
+      <!--  action corrigido -->
       <form action="admin_produto_create.jsp" method="POST" class="form-grid">
         <div>
           <label>Nome</label>
@@ -282,7 +299,7 @@ try {
       <p class="muted">Introduz o ID e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <!-- ✅ action corrigido -->
+        <!--  action corrigido -->
         <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
@@ -570,6 +587,174 @@ dbClose(rsPr, psPr, conPr);
   initTabs("encomendasAdminModal");
 </script>
 
+
+<!-- MODAL: Gerir Utilizadores (ADMIN) -->
+<div id="utilizadoresAdminModal" class="modal">
+  <div class="modal-box modal-xl">
+    <div class="modal-top">
+      <h2>Gerir Utilizadores</h2>
+      <a href="#" class="modal-close" id="fecharUtilizadoresAdmin">✕</a>
+    </div>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-u-listar">Listar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-criar">Criar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-estado">Ativar/Inativar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-perfil">Alterar Perfil</button>
+    </div>
+
+    <!-- LISTAR -->
+    <section id="tab-u-listar" class="tab-pane active">
+      <h3>Utilizadores</h3>
+
+      <div class="admin-table admin-users">
+        <div class="row head">
+          <div>ID</div><div>Username</div><div>Perfil</div><div>Ativo</div><div>Nome</div><div>Email</div>
+        </div>
+
+        <%
+          boolean temU = false;
+          if (rsU != null) {
+            while (rsU.next()) {
+              temU = true;
+              int uid = rsU.getInt("id");
+              String u = rsU.getString("username");
+              String p = rsU.getString("perfil");
+              int ativo = rsU.getInt("ativo");
+              String n = rsU.getString("nome");
+              String em = rsU.getString("email");
+        %>
+          <div class="row">
+            <div><%= uid %></div>
+            <div><strong><%= u %></strong></div>
+            <div><%= p %></div>
+            <div><%= (ativo==1 ? "Sim" : "Não") %></div>
+            <div><%= (n!=null ? n : "") %></div>
+            <div><%= (em!=null ? em : "") %></div>
+          </div>
+        <%
+            }
+          }
+          if (!temU) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Sem utilizadores.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
+
+    <!-- CRIAR -->
+    <section id="tab-u-criar" class="tab-pane">
+      <h3>Criar Utilizador</h3>
+
+      <form action="admin_utilizado_novo.jsp" method="POST" class="form-grid">
+        <div>
+          <label>Username</label>
+          <input type="text" name="username" required>
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <div>
+          <label>Perfil</label>
+          <select name="perfil">
+            <option value="CLIENTE">CLIENTE</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Ativo</label>
+          <select name="ativo">
+            <option value="1">Sim</option>
+            <option value="0">Não</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Nome</label>
+          <input type="text" name="nome">
+        </div>
+        <div>
+          <label>Email</label>
+          <input type="email" name="email">
+        </div>
+
+        <div>
+          <label>Telefone</label>
+          <input type="text" name="telefone">
+        </div>
+        <div>
+          <label>Morada</label>
+          <input type="text" name="morada">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Criar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ATIVAR/INATIVAR -->
+    <section id="tab-u-estado" class="tab-pane">
+      <h3>Ativar / Inativar Utilizador</h3>
+      <p class="muted">Introduz o ID e escolhe a ação.</p>
+
+      <div class="estado-actions">
+        <form action="admin_user_toggle.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="ATIVAR">
+          <input type="number" name="id" placeholder="ID utilizador" required>
+          <button type="submit" class="btn-mini pay">Ativar</button>
+        </form>
+
+        <form action="admin_user_toggle.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="INATIVAR">
+          <input type="number" name="id" placeholder="ID utilizador" required>
+          <button type="submit" class="btn-mini danger">Inativar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ALTERAR PERFIL -->
+    <section id="tab-u-perfil" class="tab-pane">
+      <h3>Alterar Perfil</h3>
+      <p class="muted">Introduz o ID e define o novo perfil.</p>
+
+      <form action="admin_user_perfil.jsp" method="POST" class="form-grid">
+        <div>
+          <label>ID</label>
+          <input type="number" name="id" required>
+        </div>
+        <div>
+          <label>Novo Perfil</label>
+          <select name="perfil" required>
+            <option value="CLIENTE">CLIENTE</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Alterar</button>
+        </div>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const utilizadoresAdminModal = document.getElementById("utilizadoresAdminModal");
+  const abrirUtilizadoresAdmin = document.getElementById("abrirUtilizadoresAdmin");
+  const fecharUtilizadoresAdmin = document.getElementById("fecharUtilizadoresAdmin");
+
+  if (abrirUtilizadoresAdmin) abrirUtilizadoresAdmin.addEventListener("click", (e)=>{ e.preventDefault(); utilizadoresAdminModal.classList.add("show"); });
+  if (fecharUtilizadoresAdmin) fecharUtilizadoresAdmin.addEventListener("click", (e)=>{ e.preventDefault(); utilizadoresAdminModal.classList.remove("show"); });
+  utilizadoresAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="utilizadoresAdminModal") utilizadoresAdminModal.classList.remove("show"); });
+
+  initTabs("utilizadoresAdminModal");
+</script>
 
 </body>
 </html>
