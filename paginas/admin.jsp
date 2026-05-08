@@ -151,7 +151,7 @@ try {
       <a href="#" id="abrirPromocoesAdmin">Gerir Promoções</a>
       <a href="#" id="abrirEncomendasAdmin">Gerir Encomendas</a>
       <a href="#" id="abrirUtilizadoresAdmin">Gerir Utilizadores</a>
-      <a href="#">Carteira da Loja</a>
+      <a href="admin_carteira_loja.jsp">Carteira da Loja</a>
       <a href="logout.jsp">Logout</a>
     </nav>
   </aside>
