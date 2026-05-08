@@ -63,6 +63,24 @@ try {
 }
 %>
 
+<%-- Lista de promoções (admin) --%>
+<%
+Connection conPr = null;
+PreparedStatement psPr = null;
+ResultSet rsPr = null;
+
+try {
+  conPr = dbConnect();
+  psPr = conPr.prepareStatement(
+    "SELECT id, titulo, descricao, desconto_percent, data_inicio, data_fim, ativa, criado_em " +
+    "FROM promocoes ORDER BY id DESC"
+  );
+  rsPr = dbQuery(conPr, psPr);
+} catch(Exception e){
+  out.print("Erro ao carregar promoções: " + e.getMessage());
+}
+%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -89,15 +107,11 @@ try {
 </header>
 
 <div class="dash-layout">
-
   <aside class="dash-side">
     <nav class="menu">
       <a class="active" href="admin.jsp">Dashboard</a>
-
-      <!-- ID corrigido: o JS vai procurar por abrirProdutosAdmin -->
       <a href="#" id="abrirProdutosAdmin">Gerir Produtos</a>
-
-      <a href="#">Gerir Promoções</a>
+      <a href="#" id="abrirPromocoesAdmin">Gerir Promoções</a>
       <a href="#">Gerir Encomendas</a>
       <a href="#">Gerir Utilizadores</a>
       <a href="#">Carteira da Loja</a>
@@ -106,7 +120,6 @@ try {
   </aside>
 
   <main class="dash-main">
-
     <section class="dash-hero">
       <div class="dash-hero-text">
         <h2>Painel de Administração</h2>
@@ -133,22 +146,10 @@ try {
         <p class="dash-muted">Contas ativas</p>
       </article>
     </section>
-
-    <section class="dash-section">
-      <div class="dash-section-top">
-        <h3>Atalhos</h3>
-      </div>
-      <p>
-        • Gerir Produtos: criar/editar/inativar<br>
-        • Gerir Promoções: criar/ativar/desativar<br>
-        • Gerir Encomendas: ver/validar/cancelar<br>
-      </p>
-    </section>
-
   </main>
 </div>
 
-<!-- MODAL: Gerir Produtos -->
+<!-- ===================== MODAL: PRODUTOS ===================== -->
 <div id="produtosAdminModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
@@ -156,16 +157,14 @@ try {
       <a href="#" class="modal-close" id="fecharProdutosAdmin">✕</a>
     </div>
 
-    <!-- TABS / ZONAS -->
     <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-listar">Listar</button>
-      <button type="button" class="tab-btn" data-tab="tab-adicionar">Adicionar</button>
-      <button type="button" class="tab-btn" data-tab="tab-editar">Editar</button>
-      <button type="button" class="tab-btn" data-tab="tab-estado">Ativar/Inativar</button>
+      <button type="button" class="tab-btn active" data-tab="tab-listar-prod">Listar</button>
+      <button type="button" class="tab-btn" data-tab="tab-adicionar-prod">Adicionar</button>
+      <button type="button" class="tab-btn" data-tab="tab-editar-prod">Editar</button>
+      <button type="button" class="tab-btn" data-tab="tab-estado-prod">Ativar/Inativar</button>
     </div>
 
-    <!-- 1) LISTAR -->
-    <section id="tab-listar" class="tab-pane active">
+    <section id="tab-listar-prod" class="tab-pane active">
       <h3>Produtos</h3>
       <div class="admin-table">
         <div class="row head">
@@ -184,32 +183,32 @@ try {
               double pPreco = rsProd.getDouble("preco");
               int pAtivo = rsProd.getInt("ativo");
         %>
-              <div class="row">
-                <div><%= pid %></div>
-                <div>
-                  <strong><%= pNome %></strong><br>
-                  <small class="muted"><%= (pDesc != null ? pDesc : "") %></small>
-                </div>
-                <div><%= (pCat != null ? pCat : "") %></div>
-                <div><%= String.format("%.2f €", pPreco) %></div>
-                <div><%= (pAtivo == 1 ? "Sim" : "Não") %></div>
-              </div>
+          <div class="row">
+            <div><%= pid %></div>
+            <div>
+              <strong><%= pNome %></strong><br>
+              <small class="muted"><%= (pDesc != null ? pDesc : "") %></small>
+            </div>
+            <div><%= (pCat != null ? pCat : "") %></div>
+            <div><%= String.format("%.2f €", pPreco) %></div>
+            <div><%= (pAtivo == 1 ? "Sim" : "Não") %></div>
+          </div>
         <%
             }
           }
           if (!temProd) {
         %>
-            <div class="row"><div style="grid-column:1/-1;">Sem produtos.</div></div>
+          <div class="row"><div style="grid-column:1/-1;">Sem produtos.</div></div>
         <%
           }
         %>
       </div>
     </section>
 
-    <!-- 2) ADICIONAR -->
-    <section id="tab-adicionar" class="tab-pane">
+    <section id="tab-adicionar-prod" class="tab-pane">
       <h3>Novo Produto</h3>
-      <form action="admin_produto.jsp" method="POST" class="form-grid">
+      <!-- ✅ action corrigido -->
+      <form action="admin_produto_create.jsp" method="POST" class="form-grid">
         <div>
           <label>Nome</label>
           <input type="text" name="nome" required>
@@ -232,11 +231,9 @@ try {
       </form>
     </section>
 
-    <!-- 3) EDITAR (por ID) -->
-    <section id="tab-editar" class="tab-pane">
+    <section id="tab-editar-prod" class="tab-pane">
       <h3>Editar Produto</h3>
       <p class="muted">Introduz o ID do produto e altera os campos.</p>
-
       <form action="admin_produto_update.jsp" method="POST" class="form-grid">
         <div>
           <label>ID</label>
@@ -260,19 +257,19 @@ try {
       </form>
     </section>
 
-    <!-- 4) ATIVAR / INATIVAR (por ID) -->
-    <section id="tab-estado" class="tab-pane">
+    <section id="tab-estado-prod" class="tab-pane">
       <h3>Ativar / Inativar Produto</h3>
       <p class="muted">Introduz o ID e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
+        <!-- ✅ action corrigido -->
+        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini pay">Ativar</button>
         </form>
 
-        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
+        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="INATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini danger">Inativar</button>
@@ -287,49 +284,181 @@ try {
 dbClose(rsProd, psProd, conProd);
 %>
 
-<script id="admin-produtos-modal-js">
+<!-- ===================== MODAL: PROMOÇÕES ===================== -->
+<div id="promocoesAdminModal" class="modal">
+  <div class="modal-box modal-xl">
+    <div class="modal-top">
+      <h2>Gerir Promoções</h2>
+      <a href="#" class="modal-close" id="fecharPromocoesAdmin">✕</a>
+    </div>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-prom-listar">Listar</button>
+      <button type="button" class="tab-btn" data-tab="tab-prom-criar">Criar</button>
+      <button type="button" class="tab-btn" data-tab="tab-prom-estado">Ativar/Desativar</button>
+    </div>
+
+    <section id="tab-prom-listar" class="tab-pane active">
+      <h3>Promoções</h3>
+
+      <div class="admin-table admin-promos">
+        <div class="row head">
+          <div>ID</div><div>Título</div><div>Desconto</div><div>Período</div><div>Ativa</div>
+        </div>
+
+        <%
+          boolean temPr = false;
+          if (rsPr != null) {
+            while (rsPr.next()) {
+              temPr = true;
+              int pid = rsPr.getInt("id");
+              String tit = rsPr.getString("titulo");
+              String desc = rsPr.getString("descricao");
+              int pct = rsPr.getInt("desconto_percent");   
+              Date di = rsPr.getDate("data_inicio");
+              Date df = rsPr.getDate("data_fim");
+              int ativa = rsPr.getInt("ativa");
+        %>
+          <div class="row">
+            <div><%= pid %></div>
+            <div>
+              <strong><%= tit %></strong><br>
+              <small class="muted"><%= (desc != null ? desc : "") %></small>
+            </div>
+            <div><%= (rsPr.wasNull() ? "—" : (pct + "%")) %></div>
+            <div><%= (di != null ? di.toString() : "—") %> → <%= (df != null ? df.toString() : "—") %></div>
+            <div><%= (ativa == 1 ? "Sim" : "Não") %></div>
+          </div>
+        <%
+            }
+          }
+          if (!temPr) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Ainda não existem promoções.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
+
+    <section id="tab-prom-criar" class="tab-pane">
+      <h3>Criar Promoção</h3>
+
+      <!--  nomes certos para a tua tabela -->
+      <form action="admin_promocoes_nova.jsp" method="POST" class="form-grid">
+        <div style="grid-column:1/-1;">
+          <label>Título</label>
+          <input type="text" name="titulo" required>
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <label>Descrição</label>
+          <textarea name="descricao" required style="width:100%; min-height:90px;"></textarea>
+        </div>
+
+        <div>
+          <label>Desconto (%)</label>
+          <input type="number" min="0" max="100" name="desconto_percent" placeholder="ex: 10">
+        </div>
+
+        <div>
+          <label>Ativa?</label>
+          <select name="ativa">
+            <option value="1">Sim</option>
+            <option value="0">Não</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Data início</label>
+          <input type="date" name="data_inicio">
+        </div>
+
+        <div>
+          <label>Data fim</label>
+          <input type="date" name="data_fim">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Criar</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="tab-prom-estado" class="tab-pane">
+      <h3>Ativar / Desativar</h3>
+      <p class="muted">Introduz o ID da promoção e escolhe a ação.</p>
+
+      <div class="estado-actions">
+        <form action="admin_promocao_toggle.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="ATIVAR">
+          <input type="number" name="id" placeholder="ID da promoção" required>
+          <button type="submit" class="btn-mini pay">Ativar</button>
+        </form>
+
+        <form action="admin_promocao_toggle.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="DESATIVAR">
+          <input type="number" name="id" placeholder="ID da promoção" required>
+          <button type="submit" class="btn-mini danger">Desativar</button>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<%
+dbClose(rsPr, psPr, conPr);
+%>
+
+<!-- ===================== JS: abrir/fechar modais + tabs por modal ===================== -->
+<script>
+  // Abrir/Fechar Produtos
   const produtosAdminModal = document.getElementById("produtosAdminModal");
   const abrirProdutosAdmin = document.getElementById("abrirProdutosAdmin");
   const fecharProdutosAdmin = document.getElementById("fecharProdutosAdmin");
 
-  if (abrirProdutosAdmin) {
-    abrirProdutosAdmin.addEventListener("click", function(e){
-      e.preventDefault();
-      produtosAdminModal.classList.add("show");
-    });
-  }
+  if (abrirProdutosAdmin) abrirProdutosAdmin.addEventListener("click", (e)=>{ e.preventDefault(); produtosAdminModal.classList.add("show"); });
+  if (fecharProdutosAdmin) fecharProdutosAdmin.addEventListener("click", (e)=>{ e.preventDefault(); produtosAdminModal.classList.remove("show"); });
+  produtosAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="produtosAdminModal") produtosAdminModal.classList.remove("show"); });
 
-  if (fecharProdutosAdmin) {
-    fecharProdutosAdmin.addEventListener("click", function(e){
-      e.preventDefault();
+  // Abrir/Fechar Promoções
+  const promocoesAdminModal = document.getElementById("promocoesAdminModal");
+  const abrirPromocoesAdmin = document.getElementById("abrirPromocoesAdmin");
+  const fecharPromocoesAdmin = document.getElementById("fecharPromocoesAdmin");
+
+  if (abrirPromocoesAdmin) abrirPromocoesAdmin.addEventListener("click", (e)=>{ e.preventDefault(); promocoesAdminModal.classList.add("show"); });
+  if (fecharPromocoesAdmin) fecharPromocoesAdmin.addEventListener("click", (e)=>{ e.preventDefault(); promocoesAdminModal.classList.remove("show"); });
+  promocoesAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="promocoesAdminModal") promocoesAdminModal.classList.remove("show"); });
+
+  // ESC fecha ambos
+  document.addEventListener("keydown", (e)=>{
+    if(e.key==="Escape"){
       produtosAdminModal.classList.remove("show");
+      promocoesAdminModal.classList.remove("show");
+    }
+  });
+
+  // Tabs por modal (scoped)
+  function initTabs(modalId){
+    const modal = document.getElementById(modalId);
+    if(!modal) return;
+    const box = modal.querySelector(".modal-box");
+    const btns = box.querySelectorAll(".tab-btn");
+    const panes = box.querySelectorAll(".tab-pane");
+
+    btns.forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        btns.forEach(b=>b.classList.remove("active"));
+        panes.forEach(p=>p.classList.remove("active"));
+        btn.classList.add("active");
+        box.querySelector("#"+btn.dataset.tab).classList.add("active");
+      });
     });
   }
 
-  // clicar fora fecha
-  if (produtosAdminModal) {
-    produtosAdminModal.addEventListener("click", function(e){
-      if (e.target.id === "produtosAdminModal") produtosAdminModal.classList.remove("show");
-    });
-  }
-
-  // ESC fecha
-  document.addEventListener("keydown", function(e){
-    if (e.key === "Escape" && produtosAdminModal) produtosAdminModal.classList.remove("show");
-  });
-
-  // Tabs (se existirem)
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const panes = document.querySelectorAll(".tab-pane");
-
-  tabBtns.forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      tabBtns.forEach(b=>b.classList.remove("active"));
-      panes.forEach(p=>p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.tab).classList.add("active");
-    });
-  });
+  initTabs("produtosAdminModal");
+  initTabs("promocoesAdminModal");
 </script>
 
 </body>
