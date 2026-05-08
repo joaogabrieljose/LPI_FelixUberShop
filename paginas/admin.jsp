@@ -523,7 +523,7 @@ dbClose(rsPr, psPr, conPr);
                 <button type="submit" class="btn-mini">Ver</button>
               </form>
 
-              <%-- Botões de estado (simples) --%>
+              <%-- VALIDAR apenas se estiver PAGA --%>
               <% if ("PAGA".equalsIgnoreCase(est)) { %>
                 <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
                   <input type="hidden" name="id" value="<%= eid %>">
@@ -532,15 +532,8 @@ dbClose(rsPr, psPr, conPr);
                 </form>
               <% } %>
 
-              <% if ("VALIDADA".equalsIgnoreCase(est)) { %>
-                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
-                  <input type="hidden" name="id" value="<%= eid %>">
-                  <input type="hidden" name="acao" value="ENTREGAR">
-                  <button type="submit" class="btn-mini pay">Entregar</button>
-                </form>
-              <% } %>
-
-              <% if (!"CANCELADA".equalsIgnoreCase(est) && !"ENTREGUE".equalsIgnoreCase(est)) { %>
+              <%-- CANCELAR se ainda não estiver CANCELADA nem VALIDADA --%>
+              <% if (!"CANCELADA".equalsIgnoreCase(est) && !"VALIDADA".equalsIgnoreCase(est)) { %>
                 <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
                   <input type="hidden" name="id" value="<%= eid %>">
                   <input type="hidden" name="acao" value="CANCELAR">
