@@ -723,7 +723,7 @@ dbClose(rsPr, psPr, conPr);
       <h3>Alterar Perfil</h3>
       <p class="muted">Introduz o ID e define o novo perfil.</p>
 
-      <form action="admin_user_perfil.jsp" method="POST" class="form-grid">
+      <form action="admin_utilizador_perfil.jsp" method="POST" class="form-grid">
         <div>
           <label>ID</label>
           <input type="number" name="id" required>
