@@ -81,6 +81,8 @@ try {
 }
 %>
 
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -390,13 +392,13 @@ dbClose(rsProd, psProd, conProd);
       <p class="muted">Introduz o ID da promoção e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <form action="admin_promocao_toggle.jsp" method="POST" class="inline-form">
+        <form action="admin_promocoes_ativa.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID da promoção" required>
           <button type="submit" class="btn-mini pay">Ativar</button>
         </form>
 
-        <form action="admin_promocao_toggle.jsp" method="POST" class="inline-form">
+        <form action="admin_promocoes_ativa.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="DESATIVAR">
           <input type="number" name="id" placeholder="ID da promoção" required>
           <button type="submit" class="btn-mini danger">Desativar</button>
