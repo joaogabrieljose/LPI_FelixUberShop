@@ -704,13 +704,13 @@ dbClose(rsPr, psPr, conPr);
       <p class="muted">Introduz o ID e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <form action="admin_user_toggle.jsp" method="POST" class="inline-form">
+        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID utilizador" required>
           <button type="submit" class="btn-mini pay">Ativar</button>
         </form>
 
-        <form action="admin_user_toggle.jsp" method="POST" class="inline-form">
+        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="INATIVAR">
           <input type="number" name="id" placeholder="ID utilizador" required>
           <button type="submit" class="btn-mini danger">Inativar</button>
