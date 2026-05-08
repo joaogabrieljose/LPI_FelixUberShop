@@ -114,7 +114,6 @@ try {
         <form action="admin_carteira_loja_depositar.jsp" method="POST" class="saldo-form">
         <label>Depositar (€)</label>
         <input type="number" name="valor" step="0.01" min="0.01" required>
-        <input type="text" name="descricao" placeholder="Ex: Depósito admin (opcional)">
         <button type="submit" class="btn-submit">Depositar</button>
         </form>
 
@@ -122,7 +121,6 @@ try {
         <form action="admin_loja_levantar.jsp" method="POST" class="saldo-form">
         <label>Levantar (€)</label>
         <input type="number" name="valor" step="0.01" min="0.01" required>
-        <input type="text" name="descricao" placeholder="Ex: Levantamento admin (opcional)">
         <button type="submit" class="btn-submit danger">Levantar</button>
         </form>
       </div>
