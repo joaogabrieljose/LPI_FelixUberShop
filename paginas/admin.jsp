@@ -266,13 +266,13 @@ try {
       <p class="muted">Introduz o ID e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
+        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini pay">Ativar</button>
         </form>
 
-        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
+        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="INATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini danger">Inativar</button>
