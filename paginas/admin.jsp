@@ -81,6 +81,24 @@ try {
 }
 %>
 
+<%
+Connection conEnc = null;
+PreparedStatement psEnc = null;
+ResultSet rsEnc = null;
+
+try {
+  conEnc = dbConnect();
+  psEnc = conEnc.prepareStatement(
+    "SELECT e.id, e.identificador, e.estado, e.total, e.criado_em, u.username " +
+    "FROM encomendas e JOIN utilizadores u ON u.id = e.cliente_id " +
+    "ORDER BY e.criado_em DESC LIMIT 50"
+  );
+  rsEnc = dbQuery(conEnc, psEnc);
+} catch(Exception e){
+  out.print("Erro ao carregar encomendas (admin): " + e.getMessage());
+}
+%>
+
 
 
 <!DOCTYPE html>
@@ -114,7 +132,7 @@ try {
       <a class="active" href="admin.jsp">Dashboard</a>
       <a href="#" id="abrirProdutosAdmin">Gerir Produtos</a>
       <a href="#" id="abrirPromocoesAdmin">Gerir Promoções</a>
-      <a href="#">Gerir Encomendas</a>
+      <a href="#" id="abrirEncomendasAdmin">Gerir Encomendas</a>
       <a href="#">Gerir Utilizadores</a>
       <a href="#">Carteira da Loja</a>
       <a href="logout.jsp">Logout</a>
@@ -462,6 +480,103 @@ dbClose(rsPr, psPr, conPr);
   initTabs("produtosAdminModal");
   initTabs("promocoesAdminModal");
 </script>
+
+
+<!-- MODAL: Gerir Encomendas (ADMIN) -->
+<div id="encomendasAdminModal" class="modal">
+  <div class="modal-box modal-xl">
+    <div class="modal-top">
+      <h2>Todas as encomendas</h2>
+      <a href="#" class="modal-close" id="fecharEncomendasAdmin">✕</a>
+    </div>
+
+    <!-- LISTAR -->
+    <section id="tab-enc-listar" class="tab-pane active">
+      <h3>listagem </h3>
+
+      <div class="admin-table admin-enc">
+        <div class="row head">
+          <div>Código</div><div>Cliente</div><div>Estado</div><div>Total</div><div>Data</div><div>Ações</div>
+        </div>
+
+        <%
+          boolean temEnc = false;
+          if (rsEnc != null) {
+            while (rsEnc.next()) {
+              temEnc = true;
+              long eid = rsEnc.getLong("id");
+              String cod = rsEnc.getString("identificador");
+              String est = rsEnc.getString("estado");
+              double tot = rsEnc.getDouble("total");
+              Timestamp dt = rsEnc.getTimestamp("criado_em");
+              String userCli = rsEnc.getString("username");
+        %>
+          <div class="row">
+            <div><strong><%= cod %></strong></div>
+            <div><%= userCli %></div>
+            <div><%= est %></div>
+            <div><%= String.format("%.2f €", tot) %></div>
+            <div><%= (dt != null ? dt.toString().substring(0,16) : "") %></div>
+            <div class="acoes">
+              <form action="admin_encomenda_detalhes.jsp" method="GET" class="inline-form">
+                <input type="hidden" name="id" value="<%= eid %>">
+                <button type="submit" class="btn-mini">Ver</button>
+              </form>
+
+              <%-- Botões de estado (simples) --%>
+              <% if ("PAGA".equalsIgnoreCase(est)) { %>
+                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
+                  <input type="hidden" name="id" value="<%= eid %>">
+                  <input type="hidden" name="acao" value="VALIDAR">
+                  <button type="submit" class="btn-mini pay">Validar</button>
+                </form>
+              <% } %>
+
+              <% if ("VALIDADA".equalsIgnoreCase(est)) { %>
+                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
+                  <input type="hidden" name="id" value="<%= eid %>">
+                  <input type="hidden" name="acao" value="ENTREGAR">
+                  <button type="submit" class="btn-mini pay">Entregar</button>
+                </form>
+              <% } %>
+
+              <% if (!"CANCELADA".equalsIgnoreCase(est) && !"ENTREGUE".equalsIgnoreCase(est)) { %>
+                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
+                  <input type="hidden" name="id" value="<%= eid %>">
+                  <input type="hidden" name="acao" value="CANCELAR">
+                  <button type="submit" class="btn-mini danger">Cancelar</button>
+                </form>
+              <% } %>
+            </div>
+          </div>
+        <%
+            }
+          }
+          if (!temEnc) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Não existem encomendas.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  // abrir/fechar encomendas
+  const encomendasAdminModal = document.getElementById("encomendasAdminModal");
+  const abrirEncomendasAdmin = document.getElementById("abrirEncomendasAdmin");
+  const fecharEncomendasAdmin = document.getElementById("fecharEncomendasAdmin");
+
+  if (abrirEncomendasAdmin) abrirEncomendasAdmin.addEventListener("click", (e)=>{ e.preventDefault(); encomendasAdminModal.classList.add("show"); });
+  if (fecharEncomendasAdmin) fecharEncomendasAdmin.addEventListener("click", (e)=>{ e.preventDefault(); encomendasAdminModal.classList.remove("show"); });
+  encomendasAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="encomendasAdminModal") encomendasAdminModal.classList.remove("show"); });
+
+  initTabs("encomendasAdminModal");
+</script>
+
 
 </body>
 </html>
