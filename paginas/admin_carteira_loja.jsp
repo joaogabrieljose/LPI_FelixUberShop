@@ -118,7 +118,7 @@ try {
         </form>
 
         <!-- LEVANTAR -->
-        <form action="admin_loja_levantar.jsp" method="POST" class="saldo-form">
+        <form action="admin_carteira_loja_levantar.jsp" method="POST" class="saldo-form">
         <label>Levantar (€)</label>
         <input type="number" name="valor" step="0.01" min="0.01" required>
         <button type="submit" class="btn-submit danger">Levantar</button>

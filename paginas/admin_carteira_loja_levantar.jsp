@@ -32,37 +32,44 @@ try {
   con = dbConnect();
   con.setAutoCommit(false);
 
-  // carteira LOJA
-  ps = con.prepareStatement("SELECT id FROM carteiras WHERE tipo='LOJA' LIMIT 1");
+  // 1) carteira LOJA
+  ps = con.prepareStatement("SELECT id, saldo FROM carteiras WHERE tipo='LOJA' LIMIT 1");
   rs = dbQuery(con, ps);
   if (!rs.next()) {
     con.rollback();
     response.sendRedirect("admin_carteira_loja.jsp?msg=sem_carteira_loja");
     return;
   }
+
   int carteiraId = rs.getInt("id");
+  double saldo = rs.getDouble("saldo");
   dbClose(rs, ps, null);
 
-  // atualizar saldo
-  ps = con.prepareStatement("UPDATE carteiras SET saldo = saldo + ? WHERE id=?");
+  if (saldo < valor) {
+    con.rollback();
+    response.sendRedirect("admin_carteira_loja.jsp?msg=saldo_insuficiente");
+    return;
+  }
+
+  // 2) atualizar saldo
+  ps = con.prepareStatement("UPDATE carteiras SET saldo = saldo - ? WHERE id=?");
   ps.setDouble(1, valor);
   ps.setInt(2, carteiraId);
   dbUpdate(con, ps);
   dbClose(null, ps, null);
 
-  // auditoria (ENUM aceita: AJUSTE)
+  // 3) auditoria
   String descFinal = (descricao != null && !descricao.trim().isEmpty())
     ? descricao.trim()
-    : ("Depósito na LOJA (AJUSTE) por ADMIN id=" + adminId);
+    : ("Levantamento LOJA por ADMIN id=" + adminId);
 
   ps = con.prepareStatement(
-    "INSERT INTO movimentos_carteira(tipo_operacao, valor, carteira_origem_id, carteira_destino_id, descricao) " +
-    "VALUES(?, ?, NULL, ?, ?)"
+    "INSERT INTO movimentos_carteira(tipo_operacao, valor, carteira_origem_id, carteira_destino_id, descricao, criado_em) " +
+    "VALUES('AJUSTE_LEVANTAR', ?, ?, NULL, ?, NOW())"
   );
-  ps.setString(1, "AJUSTE");      
-  ps.setDouble(2, valor);
-  ps.setInt(3, carteiraId);
-  ps.setString(4, descFinal);
+  ps.setDouble(1, valor);
+  ps.setInt(2, carteiraId);
+  ps.setString(3, descFinal);
   dbUpdate(con, ps);
 
   con.commit();
