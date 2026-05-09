@@ -128,7 +128,7 @@ try {
 
     <section class="dash-section">
       <div class="dash-section-top">
-        <h3>Movimentos (últimos 50)</h3>
+        <h3>Movimentos das operações na loja</h3>
       </div>
 
       <div class="admin-table">
@@ -147,7 +147,7 @@ try {
             int dest = rs.getInt("carteira_destino_id");
             String desc = rs.getString("descricao");
         %>
-          <div class="row" style="grid-template-columns: 0.9fr 0.9fr 0.6fr 0.6fr 0.6fr 1.4fr;">
+          <div class="row" style="grid-template-columns: 1.0fr 0.9fr 0.7fr 0.6fr 0.6fr 2.0fr;">
             <div><%= (dt != null ? dt.toString().substring(0,16) : "") %></div>
             <div><%= tipo %></div>
             <div><%= String.format("€ %.2f", val) %></div>

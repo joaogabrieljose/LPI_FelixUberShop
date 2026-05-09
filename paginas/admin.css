@@ -287,3 +287,34 @@ select{
 /* Estado */
 .estado-actions{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 .estado-actions input{ width:220px; }
+
+/* Tabela de movimentos (compacta) */
+.admin-table .row{
+  font-size: 12px;         /* reduz fonte */
+  padding: 8px 10px;       /* reduz espaço */
+  gap: 8px;
+}
+
+/* Cabeçalho um pouco maior e forte */
+.admin-table .row.head{
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* Colunas curtas: não quebrar */
+.admin-table .row > div:nth-child(1),
+.admin-table .row > div:nth-child(2),
+.admin-table .row > div:nth-child(3),
+.admin-table .row > div:nth-child(4),
+.admin-table .row > div:nth-child(5){
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Descrição: deixa quebrar para caber */
+.admin-table .row > div:nth-child(6){
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
