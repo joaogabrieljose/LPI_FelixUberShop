@@ -150,6 +150,25 @@ try {
 }
 %>
 
+<%-- ativas Promoções (para o modal) --%>
+<%
+Connection conPr = null;
+PreparedStatement psPr = null;
+ResultSet rsPr = null;
+
+try {
+    conPr = dbConnect();
+    psPr = conPr.prepareStatement(
+        "SELECT titulo, descricao, desconto_percent, data_inicio, data_fim " +
+        "FROM promocoes WHERE ativa=1 " +
+        "ORDER BY criado_em DESC LIMIT 10"
+    );
+    rsPr = dbQuery(conPr, psPr);
+} catch (Exception e) {
+    out.print("Erro ao carregar promoções: " + e.getMessage());
+}
+%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -198,7 +217,7 @@ try {
         <p>Veja as suas encomendas, saldo e promoções da semana num só lugar.</p>
         <div class="dash-actions">
           <a class="btn" href="#" id="abrirProdutosLinkHero">Ver Produtos</a>
-          <a class="btn outline" href="#">Ver Promoções</a>
+          <a class="btn outline" href="#" id="abrirPromocoesLink">Ver Promoções</a>
         </div>
       </div>
     </section>
@@ -268,6 +287,7 @@ try {
 
   </main>
 </div>
+
 
 <!-- MODAL: Dados Pessoais -->
 <div id="dadosModal" class="modal">
@@ -537,10 +557,6 @@ dbClose(rsP, psP, conP);
   </div>
 </div>
 
-<%
-dbClose(rsE, psE, conE);
-dbClose(rsUlt, psUlt, conUlt);
-%>
 
 <script>
   const encomendasModal = document.getElementById("encomendasModal");
@@ -556,6 +572,97 @@ dbClose(rsUlt, psUlt, conUlt);
   if (fecharEnc) fecharEnc.addEventListener("click", (e)=>{ e.preventDefault(); encomendasModal.classList.remove("show"); });
 
   encomendasModal.addEventListener("click", (e)=>{ if(e.target.id==="encomendasModal") encomendasModal.classList.remove("show"); });
+</script>
+
+
+
+<!-- MODAL: Promoções -->
+<div id="promocoesModal" class="modal">
+  <div class="modal-box modal-wide">
+    <div class="modal-top">
+      <h2>Promoções Ativas</h2>
+      <a href="#" class="modal-close" id="fecharPromocoesLink">✕</a>
+    </div>
+
+    <div class="dash-section" style="box-shadow:none;border:none;padding:0;">
+      <%
+        boolean temPromo = false;
+        if (rsPr != null) {
+          while (rsPr.next()) {
+            temPromo = true;
+
+            String titulo = rsPr.getString("titulo");
+            String descricao = rsPr.getString("descricao");
+            int desconto = rsPr.getInt("desconto_percent");
+            boolean descNull = rsPr.wasNull();
+
+            Date di = rsPr.getDate("data_inicio");
+            Date df = rsPr.getDate("data_fim");
+      %>
+
+        <article class="dash-card" style="margin-bottom:12px;">
+          <h3 style="margin-bottom:6px;"><%= titulo %></h3>
+
+          <p class="dash-muted" style="margin-bottom:10px;">
+            <%= (descricao != null ? descricao : "") %>
+          </p>
+
+          <p style="margin:0;font-weight:900;">
+            <%= (descNull ? "" : ("Desconto: " + desconto + "%")) %>
+          </p>
+
+          <p class="dash-muted" style="margin:6px 0 0;">
+            <strong>Período:</strong>
+            <%= (di != null ? di.toString() : "—") %>
+            →
+            <%= (df != null ? df.toString() : "—") %>
+          </p>
+        </article>
+
+      <%
+          }
+        }
+
+        if (!temPromo) {
+      %>
+        <div class="dash-card">
+          <h3>Sem promoções no momento</h3>
+          <p class="dash-muted">Volte mais tarde para ver novidades.</p>
+        </div>
+      <%
+        }
+      %>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const promocoesModal = document.getElementById("promocoesModal");
+  const abrirPromocoes = document.getElementById("abrirPromocoesLink");
+  const fecharPromocoes = document.getElementById("fecharPromocoesLink");
+
+  if (abrirPromocoes) {
+    abrirPromocoes.addEventListener("click", function(e){
+      e.preventDefault();
+      promocoesModal.classList.add("show");
+    });
+  }
+
+  if (fecharPromocoes) {
+    fecharPromocoes.addEventListener("click", function(e){
+      e.preventDefault();
+      promocoesModal.classList.remove("show");
+    });
+  }
+
+  promocoesModal.addEventListener("click", function(e){
+    if (e.target.id === "promocoesModal") promocoesModal.classList.remove("show");
+  });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") promocoesModal.classList.remove("show");
+  });
 </script>
 
 </body>
