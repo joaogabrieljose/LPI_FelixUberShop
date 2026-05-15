@@ -1,4 +1,43 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
+<%@ page import="java.sql.*" %>
+<%@ include file="../basedados/basedados.h" %>
+
+<%
+/* ===================== PRODUTOS ===================== */
+Connection conP = null;
+PreparedStatement psP = null;
+ResultSet rsP = null;
+
+try {
+  conP = dbConnect();
+  psP = conP.prepareStatement(
+    "SELECT id, nome, descricao, categoria, preco " +
+    "FROM produtos WHERE ativo=1 ORDER BY categoria, nome"
+  );
+  rsP = dbQuery(conP, psP);
+} catch(Exception e) {
+  out.print("Erro ao carregar produtos: " + e.getMessage());
+}
+
+/* ===================== PROMOÇÕES (LISTA) ===================== */
+Connection conPr = null;
+PreparedStatement psPr = null;
+ResultSet rsPr = null;
+
+try {
+  conPr = dbConnect();
+  psPr = conPr.prepareStatement(
+    "SELECT id, titulo, descricao, desconto_percent, data_inicio, data_fim, criado_em " +
+    "FROM promocoes " +
+    "WHERE ativa=1 " +
+    "ORDER BY criado_em DESC " +
+    "LIMIT 10"
+  );
+  rsPr = dbQuery(conPr, psPr);
+} catch(Exception e) {
+  out.print("Erro ao carregar promoções: " + e.getMessage());
+}
+%>
 
 <!DOCTYPE html>
 <html>
@@ -44,122 +83,105 @@
     </div>
   </section><br><br>
 
+  <!-- ===================== PRODUTOS ===================== -->
   <section id="produtos" class="produtos">
     <div class="produtos-topo">
       <h2>Produtos mercearia</h2>
     </div><br><br>
 
     <div class="produtos-grid">
+      <%
+        boolean temProdutos = false;
+        while (rsP != null && rsP.next()) {
+          temProdutos = true;
 
-      <article class="produto-card">
-        <div class="produto-img">
-          <img src="snack.jpg" alt="Snack e batatas">
-        </div>
-        <div class="produto-info">
-          <p class="produto-nome">Snack e batatas</p>
-          <p class="produto-desc">0,75 L</p>
+          String pNome = rsP.getString("nome");
+          String pDesc = rsP.getString("descricao");
+          String pCat  = rsP.getString("categoria");
+          double pPreco = rsP.getDouble("preco");
+      %>
 
-          <div class="produto-precos">
-            <span class="preco-atual">10,29 €</span>
-            <span class="preco-antigo">12,69 €</span>
+        <article class="produto-card">
+          <div class="produto-info">
+            <p class="produto-nome"><%= pNome %></p><br>
+
+            <p class="produto-desc">
+              <%= (pDesc != null && !pDesc.trim().isEmpty()) ? pDesc : (pCat != null ? pCat : "") %>
+            </p><br>
+
+            <div class="produto-precos">
+              <span class="preco-atual"><%= String.format("%.2f €", pPreco) %></span>
+            </div>
+
           </div>
+        </article>
 
-          <button class="btn-adicionar" type="button">Adicionar</button>
-        </div>
-      </article>
-
-      <article class="produto-card">
-        <div class="produto-img">
-          <img src="frutas.jpg" alt="Frutas e legumes">
-        </div>
-        <div class="produto-info">
-          <p class="produto-nome">Frutas e legumes</p>
-          <p class="produto-desc">KG</p>
-
-          <div class="produto-precos">
-            <span class="preco-atual">5,99 €</span>
-            <span class="preco-antigo">7,49 €</span>
-          </div>
-
-          <button class="btn-adicionar" type="button">Adicionar</button>
-        </div>
-      </article>
-
-      <article class="produto-card">
-        <div class="produto-img">
-          <img src="laticinios-1.jpg" alt="Laticínios e Queijos">
-        </div>
-        <div class="produto-info">
-          <p class="produto-nome">Laticínios e Queijos</p>
-          <p class="produto-desc">0,7 KG</p>
-
-          <div class="produto-precos">
-            <span class="preco-atual">7,99 €</span>
-            <span class="preco-antigo">8,99 €</span>
-          </div>
-
-          <button class="btn-adicionar" type="button">Adicionar</button>
-        </div>
-      </article>
-
-      <article class="produto-card">
-        <div class="produto-img">
-          <img src="padaria.jpg" alt="Padaria">
-        </div>
-        <div class="produto-info">
-          <p class="produto-nome">Padaria</p>
-          <p class="produto-desc">KG</p>
-
-          <div class="produto-precos">
-            <span class="preco-atual">2,29 €</span>
-            <span class="preco-antigo">2,79 €</span>
-          </div>
-
-          <button class="btn-adicionar" type="button">Adicionar</button>
-        </div>
-      </article>
-
+      <%
+        }
+        if (!temProdutos) {
+      %>
+        <p style="grid-column:1/-1;">Sem produtos disponíveis no momento.</p>
+      <%
+        }
+      %>
     </div>
   </section><br><br>
 
+  <!-- ===================== PROMOÇÕES  ===================== -->
   <section id="promocoes" class="promo">
     <div class="promo-container">
 
       <div class="promo-topo">
-        <p class="promo-kicker">Poupe na sua mercearia, todos os dias.</p>
-        <h2 class="promo-titulo">Promoções da Semana</h2>
+        <div>
+          <p class="promo-kicker">Poupe na sua mercearia, todos os dias.</p>
+          <h2 class="promo-titulo">Promoções encontras aqui</h2>
+        </div>
+
         <a class="promo-botao" href="#produtos">Ver produtos</a>
       </div>
 
-      <div class="promo-grid">
+      <!-- grelha com promoções -->
+      <div class="promo-cards">
+        <%
+          boolean temPromo = false;
 
-        <div class="promo-numeros">
-          <div class="numero-card">
-            <span class="numero">+20</span>
-            <span class="label">Produtos em promoção</span>
-          </div>
-          <div class="numero-card">
-            <span class="numero">-15%</span>
-            <span class="label">Desconto em frescos</span>
-          </div>
-        </div>
+          while (rsPr != null && rsPr.next()) {
+            temPromo = true;
 
-        <div class="promo-cards">
-          <article class="promo-card">
-            <img src="fruta_epoca.jpg" alt="Fruta da época">
-            <h3>Fruta da Época</h3>
-            <p class="promo-desc">Maçã, banana e laranja com desconto até domingo.</p>
-            <p class="promo-info"><strong>Maior saída:</strong> Laranja 1kg — <span class="preco">1,49€</span></p>
+            String titulo = rsPr.getString("titulo");
+            String desc   = rsPr.getString("descricao");
+            Integer pct   = (Integer) rsPr.getObject("desconto_percent");
+            Date di       = rsPr.getDate("data_inicio");
+            Date df       = rsPr.getDate("data_fim");
+        %>
+
+          <article class="promo-card no-img">
+            <h3><%= titulo %></h3>
+
+            <p class="promo-desc"><%= (desc != null ? desc : "") %></p>
+
+            <p class="promo-info">
+              <strong>Desconto:</strong> <%= (pct == null ? "—" : (pct + "%")) %>
+            </p>
+
+            <p class="promo-info">
+              <strong>Período:</strong>
+              <%= (di != null ? di.toString() : "—") %> → <%= (df != null ? df.toString() : "—") %>
+            </p>
           </article>
 
-          <article class="promo-card">
-            <img src="leite_iogurte.png" alt="Laticínios">
-            <h3>Laticínios</h3>
-            <p class="promo-desc">Leite e iogurtes para a sua semana com preço especial.</p>
-            <p class="promo-info"><strong>Maior saída:</strong> Leite 1L — <span class="preco">0,99€</span></p>
-          </article>
-        </div>
+        <%
+          }
 
+          if (!temPromo) {
+        %>
+          <article class="promo-card no-img">
+            <h3>Sem promoções no momento</h3>
+            <p class="promo-desc">Volte mais tarde para ver novidades.</p>
+          </article>
+        <%
+          }
+        %>
       </div>
 
     </div>
@@ -170,56 +192,31 @@
 
 <footer class="footer">
   <div class="footer-container">
-
     <div class="footer-col brand-col">
-      <div class="footer-brand">
-        <img src="legumes.png" alt="Legumes - FelixUberShop" class="footer-logo">
-        <div>
-          <h3>FelixUberShop</h3>
-          <p>A sua mercearia em Faro, com encomendas rápidas e promoções semanais.</p>
-        </div>
-      </div><br>
-
       <p class="footer-small">
-        <a href="#horarios" class="footer-link">Horários &amp; Localização</a><br>
-        Travessa Fonseca Domingo<br>
-        8000-536 Faro, Portugal
+        <a href="#horarios" class="footer-link">Localização</a><br><br>
+        PRACETA DOUTOR MANUEL PIRES BENTO <br> LOTE 13 <br>Nº 4, CV A <br>
+        6000-123 Castelo Branco
       </p>
     </div>
 
     <div class="footer-col">
-      <h4>Mapa do site</h4>
+      <h4>Contactos</h4>
       <ul>
-        <li><a href="index.jsp">Home</a></li>
-        <li><a href="#produtos">Produtos</a></li>
-        <li><a href="#promocoes">Promoções</a></li>
-        <li><a href="#horarios">Horários &amp; Localização</a></li>
-        <li><a href="#" id="abrirLoginLinkFooter">Login</a></li>
-        <li><a href="#" id="abrirRegistarLinkFooter">Inscrever-se</a></li>
+        <li><a href="#">+351 965 801 515</a></li>
+        <li><a href="#">+351 931 400 174</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
-      <h4>Políticas</h4>
-      <ul>
-        <li><a href="#">Termos e Condições</a></li>
-        <li><a href="#">Política de Privacidade</a></li>
-        <li><a href="#">Política de Cookies</a></li>
-        <li><a href="#">Livro de Reclamações</a></li>
-      </ul>
+      <h4>Horario de funcionamento</h4>
+       <p class="footer-contact">
+        Estamos aberto <br> das 8h às 19h
+       </p>
     </div>
 
     <div class="footer-col">
-      <h4>Apoio ao Cliente</h4>
-      <p class="footer-contact">
-        <strong>Email:</strong> apoio@felixubershop.pt<br>
-        <strong>Telefone:</strong> 800 000 000 (número gratuito)<br>
-        <strong>Telefone:</strong> 289 000 000 (rede fixa nacional)<br><br>
-        <strong>Horário:</strong><br>
-        Dias úteis das 8h às 19h
-      </p>
     </div>
-
   </div>
 
   <div class="footer-bottom">
@@ -238,10 +235,8 @@
     <form action="login_conect.jsp" method="POST" class="login-form">
       Utilizador
       <input type="text" id="utilizador" name="utilizador" required>
-
       Senha
       <input type="password" id="senha" name="senha" required>
-
       <button type="submit" class="btn-submit">Entrar</button>
     </form>
 
