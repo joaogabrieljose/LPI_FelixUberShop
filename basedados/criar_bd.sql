@@ -1,12 +1,5 @@
 -- =========================================================
 -- criar_bd.sql  (FelixUberShop)
--- Requisitos do enunciado:
--- - MySQL para todos os dados
--- - Utilizadores: cliente/cliente, funcionario/funcionario, admin/admin
--- - Produtos, promoções dinâmicas
--- - Carteira com transferência + auditoria
--- - Encomendas com identificador único + validação por funcionário
--- =========================================================
 
 DROP DATABASE IF EXISTS felixubershop;
 CREATE DATABASE felixubershop
@@ -15,31 +8,11 @@ CREATE DATABASE felixubershop
 
 USE felixubershop;
 
--- -----------------------------
--- 1) Config da Loja (site básico: contactos, horários, localização)
--- -----------------------------
-CREATE TABLE loja_config (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  nome_loja      VARCHAR(120) NOT NULL,
-  morada         VARCHAR(200) NOT NULL,
-  codigo_postal  VARCHAR(20)  NOT NULL,
-  cidade         VARCHAR(80)  NOT NULL,
-  pais           VARCHAR(80)  NOT NULL,
-  email          VARCHAR(120),
-  telefone       VARCHAR(40),
-  horario_texto  VARCHAR(120) NOT NULL,
-  criado_em      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
-INSERT INTO loja_config (nome_loja, morada, codigo_postal, cidade, pais, email, telefone, horario_texto)
-VALUES ('FelixUberShop', 'Travessa Fonseca Domingo', '8000-536', 'Faro', 'Portugal',
-        'apoio@felixubershop.pt', '289 000 000', 'Dias úteis das 9h às 18h');
 
 -- -----------------------------
 -- 2) Utilizadores e Perfis
 -- Perfis: visitante; cliente; funcionario; administrador
--- (visitante não precisa de registo)
--- -----------------------------
+
 CREATE TABLE utilizadores (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   username      VARCHAR(50)  NOT NULL UNIQUE,
@@ -53,7 +26,7 @@ CREATE TABLE utilizadores (
   criado_em     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Utilizadores obrigatórios do enunciado
+-- Utilizadores obrigatórios 
 INSERT INTO utilizadores (username, password, perfil, nome, email)
 VALUES
 ('cliente',     'cliente',     'CLIENTE',     'Cliente Demo',     'cliente@demo.pt'),
@@ -217,5 +190,3 @@ SET total = (
   WHERE encomenda_id = encomendas.id
 )
 WHERE identificador='AB12CD34EF56';
-
--- Fim do criar_bd.sql
