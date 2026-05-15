@@ -8,7 +8,8 @@ String perfil = (String) session.getAttribute("perfil");
 Integer userId = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-if (perfil == null || userId == null || !perfil.equalsIgnoreCase("ADMIN")) {
+//  ADMIN oficial (ID=4)
+if (perfil == null || userId == null || !perfil.equalsIgnoreCase("ADMIN") || userId.intValue() != 4) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }

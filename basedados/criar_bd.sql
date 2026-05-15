@@ -14,9 +14,9 @@ USE felixubershop;
 -- Perfis: visitante; cliente; funcionario; administrador
 
 CREATE TABLE utilizadores (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
+  id            INT PRIMARY KEY,              
   username      VARCHAR(50)  NOT NULL UNIQUE,
-  password      VARCHAR(100) NOT NULL,          -- (para já texto simples; depois podes hash)
+  password      VARCHAR(100) NOT NULL,
   perfil        ENUM('CLIENTE','FUNCIONARIO','ADMIN') NOT NULL,
   nome          VARCHAR(120),
   email         VARCHAR(120),
@@ -26,12 +26,12 @@ CREATE TABLE utilizadores (
   criado_em     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Utilizadores obrigatórios 
-INSERT INTO utilizadores (username, password, perfil, nome, email)
+-- Utilizadores obrigatórios (IDs manuais)
+INSERT INTO utilizadores (id, username, password, perfil, nome, email)
 VALUES
-('cliente',     'cliente',     'CLIENTE',     'Cliente Demo',     'cliente@demo.pt'),
-('funcionario', 'funcionario', 'FUNCIONARIO', 'Funcionário Demo', 'funcionario@demo.pt'),
-('admin',       'admin',       'ADMIN',       'Administrador',    'admin@demo.pt');
+(2, 'cliente',     'cliente',     'CLIENTE',     'Cliente Demo',     'cliente@demo.pt'),
+(3, 'funcionario', 'funcionario', 'FUNCIONARIO', 'Funcionário Demo', 'funcionario@demo.pt'),
+(4, 'admin',       'admin',       'ADMIN',       'Administrador',    'admin@demo.pt');   
 
 -- -----------------------------
 -- 3) Carteiras (saldo) + auditoria (movimentos)

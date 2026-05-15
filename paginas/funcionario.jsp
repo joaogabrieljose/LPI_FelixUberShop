@@ -7,7 +7,8 @@ String perfil = (String) session.getAttribute("perfil");
 Integer funcId = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-if (perfil == null || funcId == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
+/*  Funcionário oficial: ID = 3 */
+if (perfil == null || funcId == null || !perfil.equalsIgnoreCase("FUNCIONARIO") || funcId.intValue() != 3) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }
@@ -128,8 +129,6 @@ try{
         <p class="dash-muted">Usa o identificador (ex: AB12CD34EF56)</p>
       </article>
     </section>
-
-    <!-- ✅ REMOVIDO: tabela "Últimas validações" do dashboard -->
 
   </main>
 </div>
@@ -266,6 +265,10 @@ try{
   }
   initTabs("validarEncModal");
 </script>
+
+<%
+dbClose(rsH, psH, conH);   // fechar histórico
+%>
 
 </body>
 </html>
