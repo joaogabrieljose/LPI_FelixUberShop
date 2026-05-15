@@ -4,14 +4,16 @@
 
 <%
 String perfil = (String) session.getAttribute("perfil");
-Integer funcId = (Integer) session.getAttribute("userId");
+Integer userId = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-/*  Funcionário oficial: ID = 3 */
-if (perfil == null || funcId == null || !perfil.equalsIgnoreCase("FUNCIONARIO") || funcId.intValue() != 3) {
+/*  Restrição: qualquer FUNCIONARIO */
+if (perfil == null || userId == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }
+
+int funcId = userId.intValue();
 
 // mensagens
 String msg = request.getParameter("msg"); // ok | nao_encontrada | nao_pode_validar | erro
@@ -30,12 +32,30 @@ try{
   rsCnt = dbQuery(conCnt, psCnt);
   if(rsCnt.next()) totalValidadas = rsCnt.getInt("t");
 } catch(Exception e){
-  // ignora para não quebrar a página
+  // ignora
 } finally {
   dbClose(rsCnt, psCnt, conCnt);
 }
 
-// histórico (para a MODAL)
+/*  SELECT: TODAS as encomendas (como admin) */
+Connection conSel = null;
+PreparedStatement psSel = null;
+ResultSet rsSel = null;
+
+try{
+  conSel = dbConnect();
+  psSel = conSel.prepareStatement(
+    "SELECT e.id, e.identificador, e.estado, e.total, e.criado_em, u.username " +
+    "FROM encomendas e " +
+    "JOIN utilizadores u ON u.id = e.cliente_id " +
+    "ORDER BY e.criado_em DESC LIMIT 100"
+  );
+  rsSel = dbQuery(conSel, psSel);
+} catch(Exception e){
+  out.print("Erro ao carregar encomendas: " + e.getMessage());
+}
+
+/* histórico (para a MODAL) */
 Connection conH = null;
 PreparedStatement psH = null;
 ResultSet rsH = null;
@@ -75,7 +95,7 @@ try{
   </div>
 
   <div class="dash-user">
-    <span class="pill">👷 <%= username %></span>
+    <span class="pill"><%= username %></span>
   </div>
 </header>
 
@@ -95,7 +115,7 @@ try{
     <section class="dash-hero">
       <div class="dash-hero-text">
         <h2>Painel do Funcionário</h2>
-        <p>Validação de encomendas através do <strong>identificador</strong>.</p>
+        <p>Escolhe a encomenda na lista e valida (só valida se estiver <strong>PAGA</strong>).</p>
 
         <% if (msg != null) { %>
           <p style="font-weight:900; color:<%= "ok".equals(msg) ? "green" : "red" %>;">
@@ -125,8 +145,8 @@ try{
 
       <article class="dash-card">
         <h3>Ajuda</h3>
-        <p class="dash-big">Código</p>
-        <p class="dash-muted">Usa o identificador (ex: AB12CD34EF56)</p>
+        <p class="dash-big">Lista</p>
+        <p class="dash-muted">Mostra todas as encomendas</p>
       </article>
     </section>
 
@@ -147,13 +167,42 @@ try{
     </div>
 
     <section id="tab-val-1" class="tab-pane active">
-      <p class="muted">Introduz o código. O sistema só valida se a encomenda estiver <strong>PAGA</strong>.</p>
+      <p class="muted">Seleciona uma encomenda. O sistema só valida se ela estiver <strong>PAGA</strong>.</p>
 
       <form action="funcionario_validar.jsp" method="POST" class="form-grid">
         <div style="grid-column:1/-1;">
-          <label>Código (identificador)</label>
-          <input type="text" name="cod" placeholder="AB12CD34EF56" required>
+          <label>Encomendas (todas)</label>
+
+          <select name="encomenda_id" required>
+            <option value="">-- Selecionar encomenda --</option>
+
+            <%
+              boolean tem = false;
+              while (rsSel != null && rsSel.next()) {
+                tem = true;
+                long encId = rsSel.getLong("id");
+                String cod = rsSel.getString("identificador");
+                String est = rsSel.getString("estado");
+                String cli = rsSel.getString("username");
+                double tot = rsSel.getDouble("total");
+                Timestamp dt = rsSel.getTimestamp("criado_em");
+            %>
+              <option value="<%= encId %>">
+                <%= cod %> | <%= cli %> | <%= est %> | <%= String.format("%.2f €", tot) %>
+                <%= (dt != null ? (" | " + dt.toString().substring(0,16)) : "") %>
+              </option>
+            <%
+              }
+              if (!tem) {
+            %>
+              <option value="" disabled>Sem encomendas.</option>
+            <%
+              }
+            %>
+
+          </select>
         </div>
+
         <div class="form-actions">
           <button type="submit" class="btn-submit">Validar</button>
         </div>
@@ -172,7 +221,7 @@ try{
   </div>
 </div>
 
-<!-- ================= MODAL: HISTÓRICO (COM TABELA) ================= -->
+<!-- ================= MODAL: HISTÓRICO ================= -->
 <div id="historicoEncModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
@@ -215,7 +264,6 @@ try{
 </div>
 
 <script>
-  // abrir/fechar modais
   const validarEncModal = document.getElementById("validarEncModal");
   const abrirValidarEnc = document.getElementById("abrirValidarEnc");
   const abrirValidarEnc2 = document.getElementById("abrirValidarEnc2");
@@ -238,7 +286,6 @@ try{
   if (fecharHistoricoEnc) fecharHistoricoEnc.addEventListener("click", (e)=>{ e.preventDefault(); historicoEncModal.classList.remove("show"); });
   historicoEncModal.addEventListener("click", (e)=>{ if(e.target.id==="historicoEncModal") historicoEncModal.classList.remove("show"); });
 
-  // ESC fecha
   document.addEventListener("keydown", (e)=>{
     if(e.key==="Escape"){
       validarEncModal.classList.remove("show");
@@ -246,7 +293,6 @@ try{
     }
   });
 
-  // tabs por modal (só no validar)
   function initTabs(modalId){
     const modal = document.getElementById(modalId);
     if(!modal) return;
@@ -267,7 +313,8 @@ try{
 </script>
 
 <%
-dbClose(rsH, psH, conH);   // fechar histórico
+dbClose(rsSel, psSel, conSel);
+dbClose(rsH, psH, conH);
 %>
 
 </body>

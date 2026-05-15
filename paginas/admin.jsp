@@ -2,15 +2,15 @@
 <%@ page import="java.sql.*" %>
 <%@ include file="../basedados/basedados.h" %>
 
-<%-- Restrição de acesso: apenas ADMIN --%>
 <%
+String BASE = request.getContextPath() + "/paginas/";
+
 String perfil = (String) session.getAttribute("perfil");
 Integer userId = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-//  ADMIN oficial (ID=4)
-if (perfil == null || userId == null || !perfil.equalsIgnoreCase("ADMIN") || userId.intValue() != 4) {
-  response.sendRedirect("index.jsp?acesso=negado");
+if (perfil == null || userId == null || !perfil.equalsIgnoreCase("ADMIN")) {
+  response.sendRedirect(BASE + "index.jsp?acesso=negado");
   return;
 }
 
@@ -82,6 +82,7 @@ try {
 }
 %>
 
+<%-- Lista de encomendas (admin) --%>
 <%
 Connection conEnc = null;
 PreparedStatement psEnc = null;
@@ -100,6 +101,7 @@ try {
 }
 %>
 
+<%-- Lista de utilizadores (admin) --%>
 <%
 Connection conU = null;
 PreparedStatement psU = null;
@@ -116,8 +118,6 @@ try {
   out.print("Erro ao carregar utilizadores: " + e.getMessage());
 }
 %>
-
-
 
 <!DOCTYPE html>
 <html>
@@ -245,8 +245,7 @@ try {
 
     <section id="tab-adicionar-prod" class="tab-pane">
       <h3>Novo Produto</h3>
-      <!--  action corrigido -->
-      <form action="admin_produto_create.jsp" method="POST" class="form-grid">
+      <form action="admin_produto.jsp" method="POST" class="form-grid">
         <div>
           <label>Nome</label>
           <input type="text" name="nome" required>
@@ -300,14 +299,13 @@ try {
       <p class="muted">Introduz o ID e escolhe a ação.</p>
 
       <div class="estado-actions">
-        <!--  action corrigido -->
-        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
+        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="ATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini pay">Ativar</button>
         </form>
 
-        <form action="admin_produto_toggle_force.jsp" method="POST" class="inline-form">
+        <form action="admin_produto_ativo.jsp" method="POST" class="inline-form">
           <input type="hidden" name="modo" value="INATIVAR">
           <input type="number" name="id" placeholder="ID do produto" required>
           <button type="submit" class="btn-mini danger">Inativar</button>
@@ -320,6 +318,167 @@ try {
 
 <%
 dbClose(rsProd, psProd, conProd);
+%>
+
+<!-- ===================== MODAL: UTILIZADORES (RETIFICADO) ===================== -->
+<div id="utilizadoresAdminModal" class="modal">
+  <div class="modal-box modal-xl">
+    <div class="modal-top">
+      <h2>Gerir Utilizadores</h2>
+      <a href="#" class="modal-close" id="fecharUtilizadoresAdmin">✕</a>
+    </div>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-u-listar">Listar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-criar">Criar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-estado">Ativar/Inativar</button>
+      <button type="button" class="tab-btn" data-tab="tab-u-perfil">Alterar Perfil</button>
+    </div>
+
+    <!-- LISTAR -->
+    <section id="tab-u-listar" class="tab-pane active">
+      <h3>Utilizadores</h3>
+      <div class="admin-table admin-users">
+        <div class="row head">
+          <div>ID</div><div>Username</div><div>Perfil</div><div>Ativo</div><div>Nome</div><div>Email</div>
+        </div>
+
+        <%
+          boolean temU = false;
+          if (rsU != null) {
+            while (rsU.next()) {
+              temU = true;
+              int uid = rsU.getInt("id");
+              String u = rsU.getString("username");
+              String p = rsU.getString("perfil");
+              int ativo = rsU.getInt("ativo");
+              String n = rsU.getString("nome");
+              String em = rsU.getString("email");
+        %>
+          <div class="row">
+            <div><%= uid %></div>
+            <div><strong><%= u %></strong></div>
+            <div><%= p %></div>
+            <div><%= (ativo==1 ? "Sim" : "Não") %></div>
+            <div><%= (n!=null ? n : "") %></div>
+            <div><%= (em!=null ? em : "") %></div>
+          </div>
+        <%
+            }
+          }
+          if (!temU) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Sem utilizadores.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
+
+    <!-- CRIAR -->
+    <section id="tab-u-criar" class="tab-pane">
+      <h3>Criar Utilizador</h3>
+
+      <form action="admin_utilizado_novo.jsp" method="POST" class="form-grid">
+        <div>
+          <label>Username</label>
+          <input type="text" name="username" required>
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <div>
+          <label>Perfil</label>
+          <select name="perfil" required>
+            <option value="CLIENTE">CLIENTE</option>
+            <option value="FUNCIONARIO">FUNCIONARIO</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Ativo</label>
+          <select name="ativo">
+            <option value="1">Sim</option>
+            <option value="0">Não</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Nome</label>
+          <input type="text" name="nome">
+        </div>
+        <div>
+          <label>Email</label>
+          <input type="email" name="email">
+        </div>
+
+        <div>
+          <label>Telefone</label>
+          <input type="text" name="telefone">
+        </div>
+        <div>
+          <label>Morada</label>
+          <input type="text" name="morada">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Criar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- AQUI ESTAVA O ERRO: tinhas id="tab-prom-estado" -->
+    <section id="tab-u-estado" class="tab-pane">
+      <h3>Ativar / Inativar Utilizador</h3>
+      <p class="muted">Introduz o ID do utilizador e escolhe a ação.</p>
+
+      <div class="estado-actions">
+        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="ATIVAR">
+          <input type="number" name="id" placeholder="ID do utilizador" required>
+          <button type="submit" class="btn-mini pay">Ativar</button>
+        </form>
+
+        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="modo" value="INATIVAR">
+          <input type="number" name="id" placeholder="ID do utilizador" required>
+          <button type="submit" class="btn-mini danger">Inativar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ALTERAR PERFIL -->
+    <section id="tab-u-perfil" class="tab-pane">
+      <h3>Alterar Perfil</h3>
+      <p class="muted">Introduz o ID e define o novo perfil.</p>
+
+      <form action="admin_utilizador_perfil.jsp" method="POST" class="form-grid">
+        <div>
+          <label>ID</label>
+          <input type="number" name="id" required>
+        </div>
+        <div>
+          <label>Novo Perfil</label>
+          <select name="perfil" required>
+            <option value="CLIENTE">CLIENTE</option>
+            <option value="FUNCIONARIO">FUNCIONARIO</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Alterar</button>
+        </div>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<%
+dbClose(rsU, psU, conU);
 %>
 
 <!-- ===================== MODAL: PROMOÇÕES ===================== -->
@@ -352,7 +511,8 @@ dbClose(rsProd, psProd, conProd);
               int pid = rsPr.getInt("id");
               String tit = rsPr.getString("titulo");
               String desc = rsPr.getString("descricao");
-              int pct = rsPr.getInt("desconto_percent");   
+              int pct = rsPr.getInt("desconto_percent");
+              boolean pctNull = rsPr.wasNull();
               Date di = rsPr.getDate("data_inicio");
               Date df = rsPr.getDate("data_fim");
               int ativa = rsPr.getInt("ativa");
@@ -363,7 +523,7 @@ dbClose(rsProd, psProd, conProd);
               <strong><%= tit %></strong><br>
               <small class="muted"><%= (desc != null ? desc : "") %></small>
             </div>
-            <div><%= (rsPr.wasNull() ? "—" : (pct + "%")) %></div>
+            <div><%= (pctNull ? "—" : (pct + "%")) %></div>
             <div><%= (di != null ? di.toString() : "—") %> → <%= (df != null ? df.toString() : "—") %></div>
             <div><%= (ativa == 1 ? "Sim" : "Não") %></div>
           </div>
@@ -382,7 +542,6 @@ dbClose(rsProd, psProd, conProd);
     <section id="tab-prom-criar" class="tab-pane">
       <h3>Criar Promoção</h3>
 
-      <!--  nomes certos para a tua tabela -->
       <form action="admin_promocoes_nova.jsp" method="POST" class="form-grid">
         <div style="grid-column:1/-1;">
           <label>Título</label>
@@ -449,35 +608,82 @@ dbClose(rsProd, psProd, conProd);
 dbClose(rsPr, psPr, conPr);
 %>
 
-<!-- ===================== JS: abrir/fechar modais + tabs por modal ===================== -->
+<!-- ===================== MODAL: ENCOMENDAS (ADMIN) ===================== -->
+<div id="encomendasAdminModal" class="modal">
+  <div class="modal-box modal-xl">
+    <div class="modal-top">
+      <h2>Todas as encomendas</h2>
+      <a href="#" class="modal-close" id="fecharEncomendasAdmin">✕</a>
+    </div>
+
+    <div class="admin-table admin-enc">
+      <div class="row head">
+        <div>Código</div><div>Cliente</div><div>Estado</div><div>Total</div><div>Data</div><div>Ações</div>
+      </div>
+
+      <%
+        boolean temEnc = false;
+        if (rsEnc != null) {
+          while (rsEnc.next()) {
+            temEnc = true;
+            long eid = rsEnc.getLong("id");
+            String cod = rsEnc.getString("identificador");
+            String est = rsEnc.getString("estado");
+            double tot = rsEnc.getDouble("total");
+            Timestamp dt = rsEnc.getTimestamp("criado_em");
+            String userCli = rsEnc.getString("username");
+      %>
+        <div class="row">
+          <div><strong><%= cod %></strong></div>
+          <div><%= userCli %></div>
+          <div><%= est %></div>
+          <div><%= String.format("%.2f €", tot) %></div>
+          <div><%= (dt != null ? dt.toString().substring(0,16) : "") %></div>
+          <div class="acoes">
+
+            <form action="admin_encomenda_detalhes.jsp" method="GET" class="inline-form">
+              <input type="hidden" name="id" value="<%= eid %>">
+              <button type="submit" class="btn-mini">Ver</button>
+            </form>
+
+            <% if ("PAGA".equalsIgnoreCase(est)) { %>
+              <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
+                <input type="hidden" name="id" value="<%= eid %>">
+                <input type="hidden" name="acao" value="VALIDAR">
+                <button type="submit" class="btn-mini pay">Validar</button>
+              </form>
+            <% } %>
+
+            <% if (!"CANCELADA".equalsIgnoreCase(est) && !"VALIDADA".equalsIgnoreCase(est)) { %>
+              <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
+                <input type="hidden" name="id" value="<%= eid %>">
+                <input type="hidden" name="acao" value="CANCELAR">
+                <button type="submit" class="btn-mini danger">Cancelar</button>
+              </form>
+            <% } %>
+
+          </div>
+        </div>
+      <%
+          }
+        }
+        if (!temEnc) {
+      %>
+        <div class="row"><div style="grid-column:1/-1;">Não existem encomendas.</div></div>
+      <%
+        }
+      %>
+    </div>
+
+  </div>
+</div>
+
+<%
+dbClose(rsEnc, psEnc, conEnc);
+%>
+
+<!-- ===================== JS: abrir/fechar modais + tabs (scoped) ===================== -->
 <script>
-  // Abrir/Fechar Produtos
-  const produtosAdminModal = document.getElementById("produtosAdminModal");
-  const abrirProdutosAdmin = document.getElementById("abrirProdutosAdmin");
-  const fecharProdutosAdmin = document.getElementById("fecharProdutosAdmin");
-
-  if (abrirProdutosAdmin) abrirProdutosAdmin.addEventListener("click", (e)=>{ e.preventDefault(); produtosAdminModal.classList.add("show"); });
-  if (fecharProdutosAdmin) fecharProdutosAdmin.addEventListener("click", (e)=>{ e.preventDefault(); produtosAdminModal.classList.remove("show"); });
-  produtosAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="produtosAdminModal") produtosAdminModal.classList.remove("show"); });
-
-  // Abrir/Fechar Promoções
-  const promocoesAdminModal = document.getElementById("promocoesAdminModal");
-  const abrirPromocoesAdmin = document.getElementById("abrirPromocoesAdmin");
-  const fecharPromocoesAdmin = document.getElementById("fecharPromocoesAdmin");
-
-  if (abrirPromocoesAdmin) abrirPromocoesAdmin.addEventListener("click", (e)=>{ e.preventDefault(); promocoesAdminModal.classList.add("show"); });
-  if (fecharPromocoesAdmin) fecharPromocoesAdmin.addEventListener("click", (e)=>{ e.preventDefault(); promocoesAdminModal.classList.remove("show"); });
-  promocoesAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="promocoesAdminModal") promocoesAdminModal.classList.remove("show"); });
-
-  // ESC fecha ambos
-  document.addEventListener("keydown", (e)=>{
-    if(e.key==="Escape"){
-      produtosAdminModal.classList.remove("show");
-      promocoesAdminModal.classList.remove("show");
-    }
-  });
-
-  // Tabs por modal (scoped)
   function initTabs(modalId){
     const modal = document.getElementById(modalId);
     if(!modal) return;
@@ -495,266 +701,42 @@ dbClose(rsPr, psPr, conPr);
     });
   }
 
+  // PRODUTOS
+  const produtosAdminModal = document.getElementById("produtosAdminModal");
+  document.getElementById("abrirProdutosAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); produtosAdminModal.classList.add("show");});
+  document.getElementById("fecharProdutosAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); produtosAdminModal.classList.remove("show");});
+  produtosAdminModal?.addEventListener("click",(e)=>{ if(e.target.id==="produtosAdminModal") produtosAdminModal.classList.remove("show"); });
   initTabs("produtosAdminModal");
+
+  // PROMOÇÕES
+  const promocoesAdminModal = document.getElementById("promocoesAdminModal");
+  document.getElementById("abrirPromocoesAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); promocoesAdminModal.classList.add("show");});
+  document.getElementById("fecharPromocoesAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); promocoesAdminModal.classList.remove("show");});
+  promocoesAdminModal?.addEventListener("click",(e)=>{ if(e.target.id==="promocoesAdminModal") promocoesAdminModal.classList.remove("show"); });
   initTabs("promocoesAdminModal");
-</script>
 
-
-<!-- MODAL: Gerir Encomendas (ADMIN) -->
-<div id="encomendasAdminModal" class="modal">
-  <div class="modal-box modal-xl">
-    <div class="modal-top">
-      <h2>Todas as encomendas</h2>
-      <a href="#" class="modal-close" id="fecharEncomendasAdmin">✕</a>
-    </div>
-
-    <!-- LISTAR -->
-    <section id="tab-enc-listar" class="tab-pane active">
-      <h3>listagem </h3>
-
-      <div class="admin-table admin-enc">
-        <div class="row head">
-          <div>Código</div><div>Cliente</div><div>Estado</div><div>Total</div><div>Data</div><div>Ações</div>
-        </div>
-
-        <%
-          boolean temEnc = false;
-          if (rsEnc != null) {
-            while (rsEnc.next()) {
-              temEnc = true;
-              long eid = rsEnc.getLong("id");
-              String cod = rsEnc.getString("identificador");
-              String est = rsEnc.getString("estado");
-              double tot = rsEnc.getDouble("total");
-              Timestamp dt = rsEnc.getTimestamp("criado_em");
-              String userCli = rsEnc.getString("username");
-        %>
-          <div class="row">
-            <div><strong><%= cod %></strong></div>
-            <div><%= userCli %></div>
-            <div><%= est %></div>
-            <div><%= String.format("%.2f €", tot) %></div>
-            <div><%= (dt != null ? dt.toString().substring(0,16) : "") %></div>
-            <div class="acoes">
-              <form action="admin_encomenda_detalhes.jsp" method="GET" class="inline-form">
-                <input type="hidden" name="id" value="<%= eid %>">
-                <button type="submit" class="btn-mini">Ver</button>
-              </form>
-
-              <%-- VALIDAR apenas se estiver PAGA --%>
-              <% if ("PAGA".equalsIgnoreCase(est)) { %>
-                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
-                  <input type="hidden" name="id" value="<%= eid %>">
-                  <input type="hidden" name="acao" value="VALIDAR">
-                  <button type="submit" class="btn-mini pay">Validar</button>
-                </form>
-              <% } %>
-
-              <%-- CANCELAR se ainda não estiver CANCELADA nem VALIDADA --%>
-              <% if (!"CANCELADA".equalsIgnoreCase(est) && !"VALIDADA".equalsIgnoreCase(est)) { %>
-                <form action="admin_encomenda_estado.jsp" method="POST" class="inline-form">
-                  <input type="hidden" name="id" value="<%= eid %>">
-                  <input type="hidden" name="acao" value="CANCELAR">
-                  <button type="submit" class="btn-mini danger">Cancelar</button>
-                </form>
-              <% } %>
-            </div>
-          </div>
-        <%
-            }
-          }
-          if (!temEnc) {
-        %>
-          <div class="row"><div style="grid-column:1/-1;">Não existem encomendas.</div></div>
-        <%
-          }
-        %>
-      </div>
-    </section>
-
-  </div>
-</div>
-
-<script>
-  // abrir/fechar encomendas
+  // ENCOMENDAS
   const encomendasAdminModal = document.getElementById("encomendasAdminModal");
-  const abrirEncomendasAdmin = document.getElementById("abrirEncomendasAdmin");
-  const fecharEncomendasAdmin = document.getElementById("fecharEncomendasAdmin");
+  document.getElementById("abrirEncomendasAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); encomendasAdminModal.classList.add("show");});
+  document.getElementById("fecharEncomendasAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); encomendasAdminModal.classList.remove("show");});
+  encomendasAdminModal?.addEventListener("click",(e)=>{ if(e.target.id==="encomendasAdminModal") encomendasAdminModal.classList.remove("show"); });
 
-  if (abrirEncomendasAdmin) abrirEncomendasAdmin.addEventListener("click", (e)=>{ e.preventDefault(); encomendasAdminModal.classList.add("show"); });
-  if (fecharEncomendasAdmin) fecharEncomendasAdmin.addEventListener("click", (e)=>{ e.preventDefault(); encomendasAdminModal.classList.remove("show"); });
-  encomendasAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="encomendasAdminModal") encomendasAdminModal.classList.remove("show"); });
-
-  initTabs("encomendasAdminModal");
-</script>
-
-
-<!-- MODAL: Gerir Utilizadores (ADMIN) -->
-<div id="utilizadoresAdminModal" class="modal">
-  <div class="modal-box modal-xl">
-    <div class="modal-top">
-      <h2>Gerir Utilizadores</h2>
-      <a href="#" class="modal-close" id="fecharUtilizadoresAdmin">✕</a>
-    </div>
-
-    <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-u-listar">Listar</button>
-      <button type="button" class="tab-btn" data-tab="tab-u-criar">Criar</button>
-      <button type="button" class="tab-btn" data-tab="tab-u-estado">Ativar/Inativar</button>
-      <button type="button" class="tab-btn" data-tab="tab-u-perfil">Alterar Perfil</button>
-    </div>
-
-    <!-- LISTAR -->
-    <section id="tab-u-listar" class="tab-pane active">
-      <h3>Utilizadores</h3>
-
-      <div class="admin-table admin-users">
-        <div class="row head">
-          <div>ID</div><div>Username</div><div>Perfil</div><div>Ativo</div><div>Nome</div><div>Email</div>
-        </div>
-
-        <%
-          boolean temU = false;
-          if (rsU != null) {
-            while (rsU.next()) {
-              temU = true;
-              int uid = rsU.getInt("id");
-              String u = rsU.getString("username");
-              String p = rsU.getString("perfil");
-              int ativo = rsU.getInt("ativo");
-              String n = rsU.getString("nome");
-              String em = rsU.getString("email");
-        %>
-          <div class="row">
-            <div><%= uid %></div>
-            <div><strong><%= u %></strong></div>
-            <div><%= p %></div>
-            <div><%= (ativo==1 ? "Sim" : "Não") %></div>
-            <div><%= (n!=null ? n : "") %></div>
-            <div><%= (em!=null ? em : "") %></div>
-          </div>
-        <%
-            }
-          }
-          if (!temU) {
-        %>
-          <div class="row"><div style="grid-column:1/-1;">Sem utilizadores.</div></div>
-        <%
-          }
-        %>
-      </div>
-    </section>
-
-    <!-- CRIAR -->
-    <section id="tab-u-criar" class="tab-pane">
-      <h3>Criar Utilizador</h3>
-
-      <form action="admin_utilizado_novo.jsp" method="POST" class="form-grid">
-        <div>
-          <label>Username</label>
-          <input type="text" name="username" required>
-        </div>
-        <div>
-          <label>Password</label>
-          <input type="password" name="password" required>
-        </div>
-
-        <div>
-          <label>Perfil</label>
-          <select name="perfil">
-            <option value="CLIENTE">CLIENTE</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Ativo</label>
-          <select name="ativo">
-            <option value="1">Sim</option>
-            <option value="0">Não</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Nome</label>
-          <input type="text" name="nome">
-        </div>
-        <div>
-          <label>Email</label>
-          <input type="email" name="email">
-        </div>
-
-        <div>
-          <label>Telefone</label>
-          <input type="text" name="telefone">
-        </div>
-        <div>
-          <label>Morada</label>
-          <input type="text" name="morada">
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-submit">Criar</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- ATIVAR/INATIVAR -->
-    <section id="tab-u-estado" class="tab-pane">
-      <h3>Ativar / Inativar Utilizador</h3>
-      <p class="muted">Introduz o ID e escolhe a ação.</p>
-
-      <div class="estado-actions">
-        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
-          <input type="hidden" name="modo" value="ATIVAR">
-          <input type="number" name="id" placeholder="ID utilizador" required>
-          <button type="submit" class="btn-mini pay">Ativar</button>
-        </form>
-
-        <form action="admin_utilizador_ativo.jsp" method="POST" class="inline-form">
-          <input type="hidden" name="modo" value="INATIVAR">
-          <input type="number" name="id" placeholder="ID utilizador" required>
-          <button type="submit" class="btn-mini danger">Inativar</button>
-        </form>
-      </div>
-    </section>
-
-    <!-- ALTERAR PERFIL -->
-    <section id="tab-u-perfil" class="tab-pane">
-      <h3>Alterar Perfil</h3>
-      <p class="muted">Introduz o ID e define o novo perfil.</p>
-
-      <form action="admin_utilizador_perfil.jsp" method="POST" class="form-grid">
-        <div>
-          <label>ID</label>
-          <input type="number" name="id" required>
-        </div>
-        <div>
-          <label>Novo Perfil</label>
-          <select name="perfil" required>
-            <option value="CLIENTE">CLIENTE</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn-submit">Alterar</button>
-        </div>
-      </form>
-    </section>
-
-  </div>
-</div>
-
-<script>
+  // UTILIZADORES
   const utilizadoresAdminModal = document.getElementById("utilizadoresAdminModal");
-  const abrirUtilizadoresAdmin = document.getElementById("abrirUtilizadoresAdmin");
-  const fecharUtilizadoresAdmin = document.getElementById("fecharUtilizadoresAdmin");
-
-  if (abrirUtilizadoresAdmin) abrirUtilizadoresAdmin.addEventListener("click", (e)=>{ e.preventDefault(); utilizadoresAdminModal.classList.add("show"); });
-  if (fecharUtilizadoresAdmin) fecharUtilizadoresAdmin.addEventListener("click", (e)=>{ e.preventDefault(); utilizadoresAdminModal.classList.remove("show"); });
-  utilizadoresAdminModal.addEventListener("click", (e)=>{ if(e.target.id==="utilizadoresAdminModal") utilizadoresAdminModal.classList.remove("show"); });
-
+  document.getElementById("abrirUtilizadoresAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); utilizadoresAdminModal.classList.add("show");});
+  document.getElementById("fecharUtilizadoresAdmin")?.addEventListener("click",(e)=>{e.preventDefault(); utilizadoresAdminModal.classList.remove("show");});
+  utilizadoresAdminModal?.addEventListener("click",(e)=>{ if(e.target.id==="utilizadoresAdminModal") utilizadoresAdminModal.classList.remove("show"); });
   initTabs("utilizadoresAdminModal");
+
+  // ESC fecha tudo
+  document.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape"){
+      produtosAdminModal?.classList.remove("show");
+      promocoesAdminModal?.classList.remove("show");
+      encomendasAdminModal?.classList.remove("show");
+      utilizadoresAdminModal?.classList.remove("show");
+    }
+  });
 </script>
 
 </body>

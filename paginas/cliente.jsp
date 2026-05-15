@@ -7,8 +7,7 @@
 String perfil = (String) session.getAttribute("perfil");
 Integer userId = (Integer) session.getAttribute("userId");
 
-/*  Cliente oficial: ID = 2 */
-if (perfil == null || userId == null || !perfil.equalsIgnoreCase("CLIENTE") || userId.intValue() != 2) {
+if (perfil == null || userId == null || !perfil.equalsIgnoreCase("CLIENTE")) {
     response.sendRedirect("index.jsp?acesso=negado");
     return;
 }
