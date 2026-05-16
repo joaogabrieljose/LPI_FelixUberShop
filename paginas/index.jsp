@@ -69,13 +69,14 @@ try {
 <main>
   <section class="destaque">
     <div class="destaque-texto">
-      <h1>O melhor da Páscoa, esteja onde estiver</h1>
+      <h1>O melhor da Páscoa, esteja onde estiver</h1><br><h2>Visita a FelixUberShop</h2><br><br>
       <p>
         Na véspera da páscoa, encomende entradas, pratos de carne, peixe ou vegetarianos,
         sobremesas e muito mais para partilhar com a sua família e amigos.
-      </p><br><br>
+      </p>
+      
 
-      <a class="btn-destaque" href="#produtos">Encomendar</a>
+      
     </div>
 
     <div class="destaque-imagem">
