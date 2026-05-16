@@ -4,23 +4,21 @@
 
 <%
 String perfil = (String) session.getAttribute("perfil");
-Integer userId = (Integer) session.getAttribute("userId");
+Integer userIdObj = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-/*  Restrição: qualquer FUNCIONARIO */
-if (perfil == null || userId == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
+/* Restrição: qualquer FUNCIONARIO */
+if (perfil == null || userIdObj == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }
-
-int funcId = userId.intValue();
+int funcId = userIdObj.intValue();
 
 // mensagens
-String msg = request.getParameter("msg"); // ok | nao_encontrada | nao_pode_validar | erro
+String msg = request.getParameter("msg"); // ok | erro...
 
-// cards: quantas validações já fez
+/* CARD: quantas validações já fez */
 int totalValidadas = 0;
-
 Connection conCnt = null;
 PreparedStatement psCnt = null;
 ResultSet rsCnt = null;
@@ -37,7 +35,7 @@ try{
   dbClose(rsCnt, psCnt, conCnt);
 }
 
-/*  SELECT: TODAS as encomendas (como admin) */
+/* SELECT: TODAS as encomendas (para validar) */
 Connection conSel = null;
 PreparedStatement psSel = null;
 ResultSet rsSel = null;
@@ -48,27 +46,86 @@ try{
     "SELECT e.id, e.identificador, e.estado, e.total, e.criado_em, u.username " +
     "FROM encomendas e " +
     "JOIN utilizadores u ON u.id = e.cliente_id " +
-    "ORDER BY e.criado_em DESC LIMIT 100"
+    "ORDER BY e.criado_em DESC LIMIT 200"
   );
   rsSel = dbQuery(conSel, psSel);
 } catch(Exception e){
   out.print("Erro ao carregar encomendas: " + e.getMessage());
 }
 
-/* histórico (para a MODAL) */
-Connection conH = null;
-PreparedStatement psH = null;
-ResultSet rsH = null;
+/* SELECT: CLIENTES (para criar encomenda) */
+Connection conCli = null;
+PreparedStatement psCli = null;
+ResultSet rsCli = null;
 
 try{
-  conH = dbConnect();
-  psH = conH.prepareStatement(
-    "SELECT identificador, total, validada_em " +
-    "FROM encomendas WHERE validada_por=? " +
-    "ORDER BY validada_em DESC LIMIT 20"
+  conCli = dbConnect();
+  psCli = conCli.prepareStatement(
+    "SELECT id, username, nome, email " +
+    "FROM utilizadores " +
+    "WHERE perfil='CLIENTE' AND ativo=1 " +
+    "ORDER BY username ASC"
   );
-  psH.setInt(1, funcId);
-  rsH = dbQuery(conH, psH);
+  rsCli = dbQuery(conCli, psCli);
+} catch(Exception e){
+  out.print("Erro ao carregar clientes: " + e.getMessage());
+}
+
+/* SELECT: PRODUTOS (para criar encomenda) */
+Connection conProd = null;
+PreparedStatement psProd = null;
+ResultSet rsProd = null;
+
+try{
+  conProd = dbConnect();
+  psProd = conProd.prepareStatement(
+    "SELECT id, nome, categoria, preco " +
+    "FROM produtos WHERE ativo=1 " +
+    "ORDER BY categoria, nome"
+  );
+  rsProd = dbQuery(conProd, psProd);
+} catch(Exception e){
+  out.print("Erro ao carregar produtos: " + e.getMessage());
+}
+
+/* HISTÓRICO: VALIDAÇÕES */
+Connection conHV = null;
+PreparedStatement psHV = null;
+ResultSet rsHV = null;
+
+try{
+  conHV = dbConnect();
+  psHV = conHV.prepareStatement(
+    "SELECT e.identificador, e.total, e.validada_em, u.username AS cliente_username " +
+    "FROM encomendas e " +
+    "JOIN utilizadores u ON u.id = e.cliente_id " +
+    "WHERE e.validada_por=? AND e.validada_em IS NOT NULL " +
+    "ORDER BY e.validada_em DESC LIMIT 50"
+  );
+  psHV.setInt(1, funcId);
+  rsHV = dbQuery(conHV, psHV);
+} catch(Exception e){
+  // ignora
+}
+
+/* HISTÓRICO: CRIAÇÕES */
+Connection conHC = null;
+PreparedStatement psHC = null;
+ResultSet rsHC = null;
+
+try{
+  conHC = dbConnect();
+  psHC = conHC.prepareStatement(
+    "SELECT e.identificador, e.total, e.criado_em, u.username AS cliente_username " +
+    "FROM movimentos_carteira m " +
+    "JOIN encomendas e ON m.descricao LIKE CONCAT('%', e.identificador, '%') " +
+    "JOIN utilizadores u ON u.id = e.cliente_id " +
+    "WHERE m.tipo_operacao='PAGAMENTO_ENCOMENDA' " +
+    "  AND m.descricao LIKE CONCAT('%funcionario_id=', ?, '%') " +
+    "ORDER BY e.criado_em DESC LIMIT 50"
+  );
+  psHC.setInt(1, funcId);
+  rsHC = dbQuery(conHC, psHC);
 } catch(Exception e){
   // ignora
 }
@@ -104,7 +161,7 @@ try{
   <aside class="dash-side">
     <nav class="menu">
       <a class="active" href="funcionario.jsp">Dashboard</a>
-      <a href="#" id="abrirValidarEnc">Validar Encomenda</a>
+      <a href="#" id="abrirGerirEnc">Gerir Encomendas</a>
       <a href="#" id="abrirHistoricoEnc">Histórico</a>
       <a href="logout.jsp">Logout</a>
     </nav>
@@ -115,16 +172,16 @@ try{
     <section class="dash-hero">
       <div class="dash-hero-text">
         <h2>Painel do Funcionário</h2>
-        <p>Escolhe a encomenda na lista e valida (só valida se estiver <strong>PAGA</strong>).</p>
+        <p>Gerir encomendas: <strong>criar para cliente</strong> e <strong>validar</strong>.</p>
 
         <% if (msg != null) { %>
-          <p style="font-weight:900; color:<%= "ok".equals(msg) ? "green" : "red" %>;">
-            <%= "ok".equals(msg) ? "Encomenda validada com sucesso." : ("Erro: " + msg) %>
+          <p style="font-weight:900; color:<%= (msg.startsWith("ok") ? "green" : "red") %>;">
+            <%= (msg.startsWith("ok") ? "Operação realizada com sucesso." : ("Erro: " + msg)) %>
           </p>
         <% } %>
 
         <div class="dash-actions">
-          <a class="btn" href="#" id="abrirValidarEnc2">Validar agora</a>
+          <a class="btn" href="#" id="abrirGerirEnc2">Gerir agora</a>
           <a class="btn outline" href="#" id="abrirHistoricoEnc2">Ver histórico</a>
         </div>
       </div>
@@ -138,143 +195,253 @@ try{
       </article>
 
       <article class="dash-card">
-        <h3>Regra</h3>
+        <h3>Regra de validação</h3>
         <p class="dash-big">PAGA → VALIDADA</p>
         <p class="dash-muted">Só valida se estiver PAGA</p>
       </article>
 
       <article class="dash-card">
-        <h3>Ajuda</h3>
-        <p class="dash-big">Lista</p>
-        <p class="dash-muted">Mostra todas as encomendas</p>
+        <h3>Gestão</h3>
+        <p class="dash-big">Criar + Validar</p>
+        <p class="dash-muted">Tudo no mesmo local</p>
       </article>
     </section>
 
   </main>
 </div>
 
-<!-- ================= MODAL: VALIDAR ENCOMENDA ================= -->
-<div id="validarEncModal" class="modal">
+<!-- ================= MODAL: GERIR ENCOMENDAS (VALIDAR + CRIAR) ================= -->
+<div id="gerirEncModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
-      <h2>Validar Encomenda</h2>
-      <a href="#" class="modal-close" id="fecharValidarEnc">✕</a>
+      <h2>Gerir Encomendas</h2>
+      <a href="#" class="modal-close" id="fecharGerirEnc">✕</a>
     </div>
 
     <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-val-1">Validar</button>
-      <button type="button" class="tab-btn" data-tab="tab-val-2">Regras</button>
+      <button type="button" class="tab-btn active" data-tab="tab-gerir-validar">Validar</button>
+      <button type="button" class="tab-btn" data-tab="tab-gerir-criar">Criar Encomenda</button>
     </div>
 
-    <section id="tab-val-1" class="tab-pane active">
-      <p class="muted">Seleciona uma encomenda. O sistema só valida se ela estiver <strong>PAGA</strong>.</p>
+    <!-- ====== TAB: VALIDAR ====== -->
+    <section id="tab-gerir-validar" class="tab-pane active">
+      <p class="muted">Seleciona uma encomenda. Só valida se ela estiver <strong>PAGA</strong>.</p>
 
       <form action="funcionario_validar.jsp" method="POST" class="form-grid">
         <div style="grid-column:1/-1;">
-          <label>Encomendas (todas)</label>
-
-          <select name="encomenda_id" required>
+          <label>Encomenda</label>
+          <select name="id" required>
             <option value="">-- Selecionar encomenda --</option>
-
             <%
-              boolean tem = false;
               while (rsSel != null && rsSel.next()) {
-                tem = true;
-                long encId = rsSel.getLong("id");
-                String cod = rsSel.getString("identificador");
-                String est = rsSel.getString("estado");
-                String cli = rsSel.getString("username");
-                double tot = rsSel.getDouble("total");
-                Timestamp dt = rsSel.getTimestamp("criado_em");
             %>
-              <option value="<%= encId %>">
-                <%= cod %> | <%= cli %> | <%= est %> | <%= String.format("%.2f €", tot) %>
-                <%= (dt != null ? (" | " + dt.toString().substring(0,16)) : "") %>
+              <option value="<%= rsSel.getLong("id") %>">
+                <%= rsSel.getString("identificador") %> | <%= rsSel.getString("username") %> | <%= rsSel.getString("estado") %> | <%= String.format("%.2f €", rsSel.getDouble("total")) %>
               </option>
             <%
               }
-              if (!tem) {
             %>
-              <option value="" disabled>Sem encomendas.</option>
-            <%
-              }
-            %>
-
           </select>
         </div>
 
-        <div class="form-actions">
+        <div class="form-actions" style="grid-column:1/-1;">
           <button type="submit" class="btn-submit">Validar</button>
         </div>
       </form>
     </section>
 
-    <section id="tab-val-2" class="tab-pane">
-      <h3>Regras</h3>
-      <p class="muted">
-        • Só é possível validar se o estado for <strong>PAGA</strong>.<br>
-        • Ao validar, o estado passa para <strong>VALIDADA</strong> e ficam guardados: <code>validada_por</code> e <code>validada_em</code>.<br>
-        • O cliente passa a ver a encomenda como <strong>VALIDADA</strong>.
-      </p>
+    <!-- ====== TAB: CRIAR ====== -->
+    <section id="tab-gerir-criar" class="tab-pane">
+      <p class="muted">Seleciona o cliente e o produto (com preço). Depois indica a quantidade.</p>
+
+      <form action="funcionario_encomenda.jsp" method="POST" class="form-grid">
+
+        <div style="grid-column:1/-1;">
+          <label>Cliente</label>
+          <select name="cliente_id" required>
+            <option value="">-- Selecionar cliente --</option>
+            <%
+              boolean temClientes = false;
+              while (rsCli != null && rsCli.next()) {
+                temClientes = true;
+                int cid = rsCli.getInt("id");
+                String ucli = rsCli.getString("username");
+                String ncli = rsCli.getString("nome");
+                String ecli = rsCli.getString("email");
+            %>
+              <option value="<%= cid %>">
+                ID <%= cid %> | <%= ucli %><%= (ncli != null && !ncli.trim().isEmpty() ? (" — " + ncli) : "") %><%= (ecli != null && !ecli.trim().isEmpty() ? (" (" + ecli + ")") : "") %>
+              </option>
+            <%
+              }
+              if (!temClientes) {
+            %>
+              <option value="" disabled>Sem clientes ativos</option>
+            <%
+              }
+            %>
+          </select>
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <label>Produto</label>
+          <select name="produto_id" required>
+            <option value="">-- Selecionar produto --</option>
+            <%
+              boolean temProdutos = false;
+              while (rsProd != null && rsProd.next()) {
+                temProdutos = true;
+                int pid = rsProd.getInt("id");
+                String pnome = rsProd.getString("nome");
+                String pcat  = rsProd.getString("categoria");
+                double ppreco = rsProd.getDouble("preco");
+            %>
+              <option value="<%= pid %>">
+                ID <%= pid %> | <%= (pcat != null ? (pcat + " — ") : "") %><%= pnome %> — <%= String.format("%.2f €", ppreco) %>
+              </option>
+            <%
+              }
+              if (!temProdutos) {
+            %>
+              <option value="" disabled>Sem produtos ativos</option>
+            <%
+              }
+            %>
+          </select>
+        </div>
+
+        <div>
+          <label>Quantidade</label>
+          <input type="number" name="quantidade" min="1" value="1" required>
+        </div>
+
+        <div class="form-actions" style="grid-column:1/-1;">
+          <button type="submit" class="btn-submit">Criar e Cobrar</button>
+        </div>
+
+      </form>
     </section>
 
   </div>
 </div>
 
-<!-- ================= MODAL: HISTÓRICO ================= -->
+<!-- ================= MODAL: HISTÓRICO (VALIDAÇÕES + CRIAÇÕES) ================= -->
 <div id="historicoEncModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
-      <h2>Histórico de Validações</h2>
+      <h2>Histórico</h2>
       <a href="#" class="modal-close" id="fecharHistoricoEnc">✕</a>
     </div>
 
-    <div class="admin-table">
-      <div class="row head">
-        <div>Código</div><div>Total</div><div>Validada em</div><div>Estado</div>
-      </div>
-
-      <%
-        boolean temH = false;
-        if (rsH != null) {
-          while (rsH.next()) {
-            temH = true;
-            String cod = rsH.getString("identificador");
-            double tot = rsH.getDouble("total");
-            Timestamp dt = rsH.getTimestamp("validada_em");
-      %>
-        <div class="row" style="grid-template-columns: 1fr 0.6fr 0.9fr 0.6fr;">
-          <div><strong><%= cod %></strong></div>
-          <div><%= String.format("%.2f €", tot) %></div>
-          <div><%= (dt != null ? dt.toString().substring(0,16) : "—") %></div>
-          <div>VALIDADA</div>
-        </div>
-      <%
-          }
-        }
-        if (!temH) {
-      %>
-        <div class="row"><div style="grid-column:1/-1;">Ainda não validaste encomendas.</div></div>
-      <%
-        }
-      %>
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-hist-validacoes">Validações</button>
+      <button type="button" class="tab-btn" data-tab="tab-hist-criacoes">Criações</button>
     </div>
+
+    <!-- ===== TAB: Validações ===== -->
+    <section id="tab-hist-validacoes" class="tab-pane active">
+      <div class="admin-table">
+        <div class="row head">
+          <div>Código</div><div>Cliente</div><div>Total</div><div>Data validada</div><div>Estado</div>
+        </div>
+
+        <%
+          boolean temV = false;
+          if (rsHV != null) {
+            while (rsHV.next()) {
+              temV = true;
+              String cod = rsHV.getString("identificador");
+              String cli = rsHV.getString("cliente_username");
+              double tot = rsHV.getDouble("total");
+              Timestamp dt = rsHV.getTimestamp("validada_em");
+        %>
+          <div class="row" style="grid-template-columns: 1fr 1fr 0.6fr 0.9fr 0.6fr;">
+            <div><strong><%= cod %></strong></div>
+            <div><%= (cli != null ? cli : "") %></div>
+            <div><%= String.format("%.2f €", tot) %></div>
+            <div><%= (dt != null ? dt.toString().substring(0,16) : "—") %></div>
+            <div>VALIDADA</div>
+          </div>
+        <%
+            }
+          }
+          if (!temV) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Ainda não validaste encomendas.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
+
+    <!-- ===== TAB: Criações ===== -->
+    <section id="tab-hist-criacoes" class="tab-pane">
+      <div class="admin-table">
+        <div class="row head">
+          <div>Código</div><div>Cliente</div><div>Total</div><div>Data criação</div><div>Estado</div>
+        </div>
+
+        <%
+          boolean temC = false;
+          if (rsHC != null) {
+            while (rsHC.next()) {
+              temC = true;
+              String cod = rsHC.getString("identificador");
+              String cli = rsHC.getString("cliente_username");
+              double tot = rsHC.getDouble("total");
+              Timestamp dt = rsHC.getTimestamp("criado_em");
+        %>
+          <div class="row" style="grid-template-columns: 1fr 1fr 0.6fr 0.9fr 0.6fr;">
+            <div><strong><%= cod %></strong></div>
+            <div><%= (cli != null ? cli : "") %></div>
+            <div><%= String.format("%.2f €", tot) %></div>
+            <div><%= (dt != null ? dt.toString().substring(0,16) : "—") %></div>
+            <div>PAGA</div>
+          </div>
+        <%
+            }
+          }
+          if (!temC) {
+        %>
+          <div class="row"><div style="grid-column:1/-1;">Ainda não criaste encomendas para clientes.</div></div>
+        <%
+          }
+        %>
+      </div>
+    </section>
 
   </div>
 </div>
 
 <script>
-  const validarEncModal = document.getElementById("validarEncModal");
-  const abrirValidarEnc = document.getElementById("abrirValidarEnc");
-  const abrirValidarEnc2 = document.getElementById("abrirValidarEnc2");
-  const fecharValidarEnc = document.getElementById("fecharValidarEnc");
+  // ====== abrir/fechar GERIR ======
+  const gerirEncModal = document.getElementById("gerirEncModal");
+  const abrirGerirEnc = document.getElementById("abrirGerirEnc");
+  const abrirGerirEnc2 = document.getElementById("abrirGerirEnc2");
+  const fecharGerirEnc = document.getElementById("fecharGerirEnc");
 
-  function openValidar(e){ e.preventDefault(); validarEncModal.classList.add("show"); }
-  if (abrirValidarEnc) abrirValidarEnc.addEventListener("click", openValidar);
-  if (abrirValidarEnc2) abrirValidarEnc2.addEventListener("click", openValidar);
-  if (fecharValidarEnc) fecharValidarEnc.addEventListener("click", (e)=>{ e.preventDefault(); validarEncModal.classList.remove("show"); });
-  validarEncModal.addEventListener("click", (e)=>{ if(e.target.id==="validarEncModal") validarEncModal.classList.remove("show"); });
+  function openGerir(e){ e.preventDefault(); gerirEncModal.classList.add("show"); }
+  if (abrirGerirEnc) abrirGerirEnc.addEventListener("click", openGerir);
+  if (abrirGerirEnc2) abrirGerirEnc2.addEventListener("click", openGerir);
+  if (fecharGerirEnc) fecharGerirEnc.addEventListener("click", (e)=>{ e.preventDefault(); gerirEncModal.classList.remove("show"); });
+  gerirEncModal.addEventListener("click", (e)=>{ if(e.target.id==="gerirEncModal") gerirEncModal.classList.remove("show"); });
 
+  // tabs scoped do gerir
+  (function initTabsGerir(){
+    const box = gerirEncModal.querySelector(".modal-box");
+    const btns = box.querySelectorAll(".tab-btn");
+    const panes = box.querySelectorAll(".tab-pane");
+    btns.forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        btns.forEach(b=>b.classList.remove("active"));
+        panes.forEach(p=>p.classList.remove("active"));
+        btn.classList.add("active");
+        box.querySelector("#"+btn.dataset.tab).classList.add("active");
+      });
+    });
+  })();
+
+  // ====== abrir/fechar HISTÓRICO ======
   const historicoEncModal = document.getElementById("historicoEncModal");
   const abrirHistoricoEnc = document.getElementById("abrirHistoricoEnc");
   const abrirHistoricoEnc2 = document.getElementById("abrirHistoricoEnc2");
@@ -286,20 +453,11 @@ try{
   if (fecharHistoricoEnc) fecharHistoricoEnc.addEventListener("click", (e)=>{ e.preventDefault(); historicoEncModal.classList.remove("show"); });
   historicoEncModal.addEventListener("click", (e)=>{ if(e.target.id==="historicoEncModal") historicoEncModal.classList.remove("show"); });
 
-  document.addEventListener("keydown", (e)=>{
-    if(e.key==="Escape"){
-      validarEncModal.classList.remove("show");
-      historicoEncModal.classList.remove("show");
-    }
-  });
-
-  function initTabs(modalId){
-    const modal = document.getElementById(modalId);
-    if(!modal) return;
-    const box = modal.querySelector(".modal-box");
+  // tabs scoped do histórico
+  (function initTabsHistorico(){
+    const box = historicoEncModal.querySelector(".modal-box");
     const btns = box.querySelectorAll(".tab-btn");
     const panes = box.querySelectorAll(".tab-pane");
-
     btns.forEach(btn=>{
       btn.addEventListener("click", ()=>{
         btns.forEach(b=>b.classList.remove("active"));
@@ -308,13 +466,23 @@ try{
         box.querySelector("#"+btn.dataset.tab).classList.add("active");
       });
     });
-  }
-  initTabs("validarEncModal");
+  })();
+
+  // ESC fecha
+  document.addEventListener("keydown", (e)=>{
+    if(e.key==="Escape"){
+      gerirEncModal.classList.remove("show");
+      historicoEncModal.classList.remove("show");
+    }
+  });
 </script>
 
 <%
 dbClose(rsSel, psSel, conSel);
-dbClose(rsH, psH, conH);
+dbClose(rsCli, psCli, conCli);
+dbClose(rsProd, psProd, conProd);
+dbClose(rsHV, psHV, conHV);
+dbClose(rsHC, psHC, conHC);
 %>
 
 </body>

@@ -67,7 +67,6 @@ try {
 
   <div class="dash-user">
     <span class="pill">🛠️ <%= username %></span>
-    <a class="pill" href="logout.jsp">Logout</a>
   </div>
 </header>
 

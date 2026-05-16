@@ -218,10 +218,6 @@ try {
     <div class="footer-col">
     </div>
   </div>
-
-  <div class="footer-bottom">
-    <p>© 2026 FelixUberShop — Todos os direitos reservados.</p>
-  </div>
 </footer>
 
 <!-- =================== MODAL LOGIN =================== -->

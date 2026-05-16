@@ -4,16 +4,26 @@
 
 <%
 String perfil = (String) session.getAttribute("perfil");
-Integer funcId = (Integer) session.getAttribute("userId");
+Integer funcIdObj = (Integer) session.getAttribute("userId");
 
-if (perfil == null || funcId == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
+if (perfil == null || funcIdObj == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }
 
-String cod = request.getParameter("cod");
-if (cod == null || cod.trim().isEmpty()) {
-  response.sendRedirect("funcionario.jsp?msg=cod_em_falta");
+int funcId = funcIdObj.intValue();
+
+String idStr = request.getParameter("id");
+if (idStr == null || idStr.trim().isEmpty()) {
+  response.sendRedirect("funcionario.jsp?msg=codigo_em_falta");
+  return;
+}
+
+long encomendaId;
+try {
+  encomendaId = Long.parseLong(idStr.trim());
+} catch(Exception e) {
+  response.sendRedirect("funcionario.jsp?msg=id_invalido");
   return;
 }
 
@@ -23,41 +33,44 @@ ResultSet rs = null;
 
 try {
   con = dbConnect();
-  con.setAutoCommit(false);
 
-  ps = con.prepareStatement("SELECT id, estado FROM encomendas WHERE identificador=? LIMIT 1");
-  ps.setString(1, cod.trim());
+  // 1) Confirmar estado atual
+  ps = con.prepareStatement("SELECT estado FROM encomendas WHERE id=? LIMIT 1");
+  ps.setLong(1, encomendaId);
   rs = dbQuery(con, ps);
 
   if (!rs.next()) {
-    con.rollback();
     response.sendRedirect("funcionario.jsp?msg=nao_encontrada");
     return;
   }
 
-  long encId = rs.getLong("id");
   String estado = rs.getString("estado");
   dbClose(rs, ps, null);
 
   if (!"PAGA".equalsIgnoreCase(estado)) {
-    con.rollback();
     response.sendRedirect("funcionario.jsp?msg=nao_pode_validar");
     return;
   }
 
+  // 2) Validar (igual ao admin)
   ps = con.prepareStatement(
-    "UPDATE encomendas SET estado='VALIDADA', validada_por=?, validada_em=NOW() WHERE id=?"
+    "UPDATE encomendas " +
+    "SET estado='VALIDADA', validada_por=?, validada_em=NOW() " +
+    "WHERE id=? AND estado='PAGA'"
   );
   ps.setInt(1, funcId);
-  ps.setLong(2, encId);
-  dbUpdate(con, ps);
+  ps.setLong(2, encomendaId);
 
-  con.commit();
-  response.sendRedirect("funcionario.jsp?msg=ok");
+  int rows = dbUpdate(con, ps);
+
+  if (rows == 0) {
+    response.sendRedirect("funcionario.jsp?msg=nao_pode_validar");
+  } else {
+    response.sendRedirect("funcionario.jsp?msg=ok");
+  }
   return;
 
-} catch(Exception e){
-  try { if (con != null) con.rollback(); } catch(Exception ig){}
+} catch(Exception e) {
   out.print("Erro: " + e.getMessage());
 } finally {
   dbClose(rs, ps, con);
