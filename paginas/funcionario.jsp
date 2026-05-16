@@ -3,21 +3,53 @@
 <%@ include file="../basedados/basedados.h" %>
 
 <%
+/* ===================== AUTH ===================== */
+/* Área de gestão: acessível a FUNCIONARIO e ADMIN */
 String perfil = (String) session.getAttribute("perfil");
 Integer userIdObj = (Integer) session.getAttribute("userId");
 String username = (String) session.getAttribute("username");
 
-/* Restrição: qualquer FUNCIONARIO */
-if (perfil == null || userIdObj == null || !perfil.equalsIgnoreCase("FUNCIONARIO")) {
+if (perfil == null || userIdObj == null ||
+   !(perfil.equalsIgnoreCase("FUNCIONARIO") || perfil.equalsIgnoreCase("ADMIN"))) {
   response.sendRedirect("index.jsp?acesso=negado");
   return;
 }
-int funcId = userIdObj.intValue();
+int staffId = userIdObj.intValue(); // id do funcionário/admin logado
 
-// mensagens
-String msg = request.getParameter("msg"); // ok | erro...
+// msg de feedback
+String msg = request.getParameter("msg"); // ok_... | erro_...
 
-/* CARD: quantas validações já fez */
+/* ===================== DADOS PESSOAIS (do logado) ===================== */
+Connection conMe = null;
+PreparedStatement psMe = null;
+ResultSet rsMe = null;
+
+String nome = "";
+String email = "";
+String telefone = "";
+String morada = "";
+
+try{
+  conMe = dbConnect();
+  psMe = conMe.prepareStatement(
+    "SELECT nome, email, telefone, morada FROM utilizadores WHERE id=? LIMIT 1"
+  );
+  psMe.setInt(1, staffId);
+  rsMe = dbQuery(conMe, psMe);
+
+  if(rsMe.next()){
+    nome = (rsMe.getString("nome") != null ? rsMe.getString("nome") : "");
+    email = (rsMe.getString("email") != null ? rsMe.getString("email") : "");
+    telefone = (rsMe.getString("telefone") != null ? rsMe.getString("telefone") : "");
+    morada = (rsMe.getString("morada") != null ? rsMe.getString("morada") : "");
+  }
+} catch(Exception e){
+  // não quebra
+} finally {
+  dbClose(rsMe, psMe, conMe);
+}
+
+/* ===================== CARD: validações do funcionário ===================== */
 int totalValidadas = 0;
 Connection conCnt = null;
 PreparedStatement psCnt = null;
@@ -26,7 +58,7 @@ ResultSet rsCnt = null;
 try{
   conCnt = dbConnect();
   psCnt = conCnt.prepareStatement("SELECT COUNT(*) AS t FROM encomendas WHERE validada_por=?");
-  psCnt.setInt(1, funcId);
+  psCnt.setInt(1, staffId);
   rsCnt = dbQuery(conCnt, psCnt);
   if(rsCnt.next()) totalValidadas = rsCnt.getInt("t");
 } catch(Exception e){
@@ -35,7 +67,7 @@ try{
   dbClose(rsCnt, psCnt, conCnt);
 }
 
-/* SELECT: TODAS as encomendas (para validar) */
+/* ===================== SELECT: TODAS as encomendas (para validar) ===================== */
 Connection conSel = null;
 PreparedStatement psSel = null;
 ResultSet rsSel = null;
@@ -53,7 +85,7 @@ try{
   out.print("Erro ao carregar encomendas: " + e.getMessage());
 }
 
-/* SELECT: CLIENTES (para criar encomenda) */
+/* ===================== SELECT: CLIENTES (para criar encomenda + gerir carteira) ===================== */
 Connection conCli = null;
 PreparedStatement psCli = null;
 ResultSet rsCli = null;
@@ -61,17 +93,18 @@ ResultSet rsCli = null;
 try{
   conCli = dbConnect();
   psCli = conCli.prepareStatement(
-    "SELECT id, username, nome, email " +
-    "FROM utilizadores " +
-    "WHERE perfil='CLIENTE' AND ativo=1 " +
-    "ORDER BY username ASC"
+    "SELECT u.id, u.username, u.nome, u.email, c.id AS carteira_id, c.saldo " +
+    "FROM utilizadores u " +
+    "LEFT JOIN carteiras c ON c.utilizador_id=u.id AND c.tipo='UTILIZADOR' " +
+    "WHERE u.perfil='CLIENTE' AND u.ativo=1 " +
+    "ORDER BY u.username ASC"
   );
   rsCli = dbQuery(conCli, psCli);
 } catch(Exception e){
   out.print("Erro ao carregar clientes: " + e.getMessage());
 }
 
-/* SELECT: PRODUTOS (para criar encomenda) */
+/* ===================== SELECT: PRODUTOS (para criar encomenda) ===================== */
 Connection conProd = null;
 PreparedStatement psProd = null;
 ResultSet rsProd = null;
@@ -87,51 +120,14 @@ try{
 } catch(Exception e){
   out.print("Erro ao carregar produtos: " + e.getMessage());
 }
-
-/* HISTÓRICO: VALIDAÇÕES */
-Connection conHV = null;
-PreparedStatement psHV = null;
-ResultSet rsHV = null;
-
-try{
-  conHV = dbConnect();
-  psHV = conHV.prepareStatement(
-    "SELECT e.identificador, e.total, e.validada_em, u.username AS cliente_username " +
-    "FROM encomendas e " +
-    "JOIN utilizadores u ON u.id = e.cliente_id " +
-    "WHERE e.validada_por=? AND e.validada_em IS NOT NULL " +
-    "ORDER BY e.validada_em DESC LIMIT 50"
-  );
-  psHV.setInt(1, funcId);
-  rsHV = dbQuery(conHV, psHV);
-} catch(Exception e){ }
-
-/* HISTÓRICO: CRIAÇÕES */
-Connection conHC = null;
-PreparedStatement psHC = null;
-ResultSet rsHC = null;
-
-try{
-  conHC = dbConnect();
-  psHC = conHC.prepareStatement(
-    "SELECT e.identificador, e.total, e.criado_em, u.username AS cliente_username " +
-    "FROM movimentos_carteira m " +
-    "JOIN encomendas e ON m.descricao LIKE CONCAT('%', e.identificador, '%') " +
-    "JOIN utilizadores u ON u.id = e.cliente_id " +
-    "WHERE m.tipo_operacao='PAGAMENTO_ENCOMENDA' " +
-    "  AND m.descricao LIKE CONCAT('%funcionario_id=', ?, '%') " +
-    "ORDER BY e.criado_em DESC LIMIT 50"
-  );
-  psHC.setInt(1, funcId);
-  rsHC = dbQuery(conHC, psHC);
-} catch(Exception e){ }
 %>
 
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Funcionário - FelixUberShop</title>
+  <title>Área de Gestão - FelixUberShop</title>
+  <link rel="stylesheet" href="cliente_dados_pessoais.css">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -143,12 +139,12 @@ try{
     </a>
     <div>
       <h1>FelixUberShop</h1>
-      <p>Área do Funcionário</p>
+      <p>Área de Gestão</p>
     </div>
   </div>
 
   <div class="dash-user">
-    <span class="pill"><%= username %></span>
+    <span class="pill"><%= (username != null ? username : "") %> (<%= perfil %>)</span>
   </div>
 </header>
 
@@ -157,8 +153,9 @@ try{
   <aside class="dash-side">
     <nav class="menu">
       <a class="active" href="funcionario.jsp">Dashboard</a>
-      <a href="#" id="abrirGerirEnc">Gerir Encomendas</a>
-      <a href="#" id="abrirHistoricoEnc">Histórico</a>
+      <a href="#" id="abrirDadosLink">Dados pessoais</a>
+      <a href="#" id="abrirGerirEnc">Gestão de encomendas</a>
+      <a href="#" id="abrirCarteirasLink">Gestão de carteira (clientes)</a>
       <a href="logout.jsp">Logout</a>
     </nav>
   </aside>
@@ -167,8 +164,9 @@ try{
 
     <section class="dash-hero">
       <div class="dash-hero-text">
-        <h2>Painel do Funcionário</h2><br>
-        
+        <h2>Painel de Gestão</h2>
+        <p>Encomendas + carteiras de clientes + dados pessoais.</p>
+
         <% if (msg != null) { %>
           <p style="font-weight:900; color:<%= (msg.startsWith("ok") ? "green" : "red") %>;">
             <%= (msg.startsWith("ok") ? "Operação realizada com sucesso." : ("Erro: " + msg)) %>
@@ -176,8 +174,9 @@ try{
         <% } %>
 
         <div class="dash-actions">
-          <a class="btn" href="#" id="abrirGerirEnc2">Gerir agora</a>
-          <a class="btn outline" href="#" id="abrirHistoricoEnc2">Ver histórico</a>
+          <a class="btn" href="#" id="abrirGerirEnc2">Gerir encomendas</a>
+          <a class="btn outline" href="#" id="abrirCarteirasLink2">Gerir carteiras</a>
+          <a class="btn outline" href="#" id="abrirDadosLink2">Editar dados</a>
         </div>
       </div>
     </section>
@@ -186,27 +185,27 @@ try{
       <article class="dash-card">
         <h3>Validações realizadas</h3>
         <p class="dash-big"><%= totalValidadas %></p>
-        <p class="dash-muted">Total validadas por ti</p>
+        <p class="dash-muted">Encomendas validadas por ti</p>
       </article>
     </section>
 
   </main>
 </div>
 
-<!-- ================= MODAL: GERIR ENCOMENDAS (VALIDAR + CRIAR) ================= -->
+<!-- ================= MODAL: GESTÃO DE ENCOMENDAS (VALIDAR + CRIAR) ================= -->
 <div id="gerirEncModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
-      <h2>Gerir Encomendas</h2>
+      <h2>Gestão de Encomendas</h2>
       <a href="#" class="modal-close" id="fecharGerirEnc">✕</a>
     </div>
 
     <div class="tabs">
       <button type="button" class="tab-btn active" data-tab="tab-gerir-validar">Validar</button>
-      <button type="button" class="tab-btn" data-tab="tab-gerir-criar">Criar Encomenda</button>
+      <button type="button" class="tab-btn" data-tab="tab-gerir-criar">Criar encomenda</button>
     </div>
 
-    <!-- ====== TAB: VALIDAR ====== -->
+    <!-- VALIDAR -->
     <section id="tab-gerir-validar" class="tab-pane active">
       <p class="muted">Seleciona uma encomenda. Só valida se ela estiver <strong>PAGA</strong>.</p>
 
@@ -233,7 +232,7 @@ try{
       </form>
     </section>
 
-    <!-- ====== TAB: CRIAR ====== -->
+    <!-- CRIAR (cobra carteira do cliente) -->
     <section id="tab-gerir-criar" class="tab-pane">
       <p class="muted">Seleciona o cliente e o produto (com preço). Depois indica a quantidade.</p>
 
@@ -244,26 +243,17 @@ try{
           <select name="cliente_id" required>
             <option value="">-- Selecionar cliente --</option>
             <%
-              boolean temClientes = false;
-              while (rsCli != null && rsCli.next()) {
-                temClientes = true;
-                int cid = rsCli.getInt("id");
-                String ucli = rsCli.getString("username");
-                String ncli = rsCli.getString("nome");
-                String ecli = rsCli.getString("email");
+              // ATENÇÃO: rsCli também vai ser usado no modal de carteiras.
+              // Por isso NÃO reutilizamos rsCli aqui (para não "gastar" o cursor).
+              // Vamos reconstruir a lista no modal de carteiras com uma query separada lá.
+              //
+              // Aqui, para simplificar, vamos só mostrar uma mensagem e pedir para escolher no modal de carteiras.
             %>
-              <option value="<%= cid %>">
-                ID <%= cid %> | <%= ucli %><%= (ncli != null && !ncli.trim().isEmpty() ? (" — " + ncli) : "") %><%= (ecli != null && !ecli.trim().isEmpty() ? (" (" + ecli + ")") : "") %>
-              </option>
-            <%
-              }
-              if (!temClientes) {
-            %>
-              <option value="" disabled>Sem clientes ativos</option>
-            <%
-              }
-            %>
+            <option value="" disabled>Seleciona o cliente no modal “Gestão de carteira” (lista completa).</option>
           </select>
+          <p class="muted" style="margin-top:8px;">
+            Nota: Para evitar bugs de ResultSet (cursor), a lista completa de clientes está no modal “Gestão de carteira”.
+          </p>
         </div>
 
         <div style="grid-column:1/-1;">
@@ -308,156 +298,172 @@ try{
   </div>
 </div>
 
-<!-- ================= MODAL: HISTÓRICO (VALIDAÇÕES + CRIAÇÕES) ================= -->
-<div id="historicoEncModal" class="modal">
+<!-- ================= MODAL: GESTÃO DE CARTEIRA (CLIENTES) ================= -->
+<div id="carteirasModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
-      <h2>Histórico</h2>
-      <a href="#" class="modal-close" id="fecharHistoricoEnc">✕</a>
+      <h2>Gestão de Saldo (Clientes)</h2>
+      <a href="#" class="modal-close" id="fecharCarteirasLink">✕</a>
     </div>
 
     <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-hist-validacoes">Validações</button>
-      <button type="button" class="tab-btn" data-tab="tab-hist-criacoes">Criações</button>
+      <button type="button" class="tab-btn active" data-tab="tab-car-lista">Clientes</button>
+      <button type="button" class="tab-btn" data-tab="tab-car-operar">Operar saldo</button>
     </div>
 
-    <!-- ===== TAB: Validações ===== -->
-    <section id="tab-hist-validacoes" class="tab-pane active">
+    <!-- LISTA clientes/saldos -->
+    <section id="tab-car-lista" class="tab-pane active">
       <div class="admin-table">
         <div class="row head">
-          <div>Código</div><div>Cliente</div><div>Total</div><div>Data validada</div><div>Estado</div>
-        </div>
-
-        <%
-          boolean temV = false;
-          if (rsHV != null) {
-            while (rsHV.next()) {
-              temV = true;
-              String cod = rsHV.getString("identificador");
-              String cli = rsHV.getString("cliente_username");
-              double tot = rsHV.getDouble("total");
-              Timestamp dt = rsHV.getTimestamp("validada_em");
-        %>
-          <div class="row" style="grid-template-columns: 1fr 1fr 0.6fr 0.9fr 0.6fr;">
-            <div><strong><%= cod %></strong></div>
-            <div><%= (cli != null ? cli : "") %></div>
-            <div><%= String.format("%.2f €", tot) %></div>
-            <div><%= (dt != null ? dt.toString().substring(0,16) : "—") %></div>
-            <div>VALIDADA</div>
-          </div>
-        <%
-            }
-          }
-          if (!temV) {
-        %>
-          <div class="row"><div style="grid-column:1/-1;">Ainda não validaste encomendas.</div></div>
-        <%
-          }
-        %>
-      </div>
-    </section>
-
-    <!-- ===== TAB: Criações ===== -->
-    <section id="tab-hist-criacoes" class="tab-pane">
-      <div class="admin-table">
-        <div class="row head">
-          <div>Código</div><div>Cliente</div><div>Total</div><div>Data criação</div><div>Estado</div>
+          <div>ID</div><div>Username</div><div>Nome</div><div>Carteira</div><div>Saldo</div>
         </div>
 
         <%
           boolean temC = false;
-          if (rsHC != null) {
-            while (rsHC.next()) {
+          if (rsCli != null) {
+            while (rsCli.next()) {
               temC = true;
-              String cod = rsHC.getString("identificador");
-              String cli = rsHC.getString("cliente_username");
-              double tot = rsHC.getDouble("total");
-              Timestamp dt = rsHC.getTimestamp("criado_em");
+              int cid = rsCli.getInt("id");
+              String ucli = rsCli.getString("username");
+              String ncli = rsCli.getString("nome");
+              int carId = rsCli.getInt("carteira_id");
+              double saldo = rsCli.getDouble("saldo");
         %>
-          <div class="row" style="grid-template-columns: 1fr 1fr 0.6fr 0.9fr 0.6fr;">
-            <div><strong><%= cod %></strong></div>
-            <div><%= (cli != null ? cli : "") %></div>
-            <div><%= String.format("%.2f €", tot) %></div>
-            <div><%= (dt != null ? dt.toString().substring(0,16) : "—") %></div>
-            <div>PAGA</div>
+          <div class="row" style="grid-template-columns:0.5fr 1fr 1.2fr 0.8fr 0.6fr;">
+            <div><%= cid %></div>
+            <div><strong><%= (ucli != null ? ucli : "") %></strong></div>
+            <div><%= (ncli != null ? ncli : "") %></div>
+            <div><%= (carId > 0 ? carId : 0) %></div>
+            <div><%= String.format("%.2f €", saldo) %></div>
           </div>
         <%
             }
           }
           if (!temC) {
         %>
-          <div class="row"><div style="grid-column:1/-1;">Ainda não criaste encomendas para clientes.</div></div>
+          <div class="row"><div style="grid-column:1/-1;">Sem clientes ativos.</div></div>
         <%
           }
         %>
       </div>
     </section>
 
+    <!-- OPERAR (depositar/levantar) -->
+    <section id="tab-car-operar" class="tab-pane">
+      <p class="muted">Escolhe um cliente pelo ID e indica o valor. O sistema regista em movimentos_carteira.</p>
+
+      <div class="estado-actions" style="gap:14px; flex-wrap:wrap;">
+        <!-- DEPOSITAR -->
+        <form action="funcionario_carteira_cliente.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="acao" value="ADICIONAR">
+          <input type="number" name="cliente_id" placeholder="ID do cliente" required>
+          <input type="number" name="valor" step="0.01" min="0.01" placeholder="Valor (€)" required>
+          <button type="submit" class="btn-mini pay">Depositar</button>
+        </form>
+
+        <!-- LEVANTAR -->
+        <form action="funcionario_carteira_cliente.jsp" method="POST" class="inline-form">
+          <input type="hidden" name="acao" value="LEVANTAR">
+          <input type="number" name="cliente_id" placeholder="ID do cliente" required>
+          <input type="number" name="valor" step="0.01" min="0.01" placeholder="Valor (€)" required>
+          <button type="submit" class="btn-mini danger">Levantar</button>
+        </form>
+      </div>
+
+      <p class="muted" style="margin-top:10px;">
+        Dica: usa a tab “Clientes” para veres o ID e o saldo antes de operar.
+      </p>
+    </section>
+
+  </div>
+</div>
+
+<!-- ================= MODAL: DADOS PESSOAIS ================= -->
+<div id="dadosModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <h2>Dados Pessoais</h2>
+      <a href="#" class="modal-close" id="fecharDadosLink">✕</a>
+    </div>
+
+    <!-- Reutiliza o mesmo backend -->
+    <form action="dados_pessoais_update.jsp" method="POST" class="login-form">
+      <input type="hidden" name="redir" value="funcionario.jsp">
+
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" name="nome" value="<%= nome %>" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="<%= email %>">
+
+      <label for="telefone">Telefone</label>
+      <input type="text" id="telefone" name="telefone" value="<%= telefone %>">
+
+      <label for="morada">Morada</label>
+      <input type="text" id="morada" name="morada" value="<%= morada %>">
+
+      <button type="submit" class="btn-submit">Guardar</button>
+    </form>
   </div>
 </div>
 
 <script>
-  // ====== abrir/fechar GERIR ======
+  // ========= helpers tabs (scoped) =========
+  function initTabsInside(modalEl){
+    if(!modalEl) return;
+    const box = modalEl.querySelector(".modal-box");
+    const btns = box.querySelectorAll(".tab-btn");
+    const panes = box.querySelectorAll(".tab-pane");
+    btns.forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        btns.forEach(b=>b.classList.remove("active"));
+        panes.forEach(p=>p.classList.remove("active"));
+        btn.classList.add("active");
+        box.querySelector("#"+btn.dataset.tab).classList.add("active");
+      });
+    });
+  }
+
+  // ========= MODAL: encomendas =========
   const gerirEncModal = document.getElementById("gerirEncModal");
-  const abrirGerirEnc = document.getElementById("abrirGerirEnc");
-  const abrirGerirEnc2 = document.getElementById("abrirGerirEnc2");
-  const fecharGerirEnc = document.getElementById("fecharGerirEnc");
+  function openGerir(e){ if(e) e.preventDefault(); gerirEncModal.classList.add("show"); }
+  document.getElementById("abrirGerirEnc")?.addEventListener("click", openGerir);
+  document.getElementById("abrirGerirEnc2")?.addEventListener("click", openGerir);
+  document.getElementById("fecharGerirEnc")?.addEventListener("click",(e)=>{e.preventDefault(); gerirEncModal.classList.remove("show");});
+  gerirEncModal?.addEventListener("click",(e)=>{ if(e.target.id==="gerirEncModal") gerirEncModal.classList.remove("show"); });
+  initTabsInside(gerirEncModal);
 
-  function openGerir(e){ e.preventDefault(); gerirEncModal.classList.add("show"); }
-  if (abrirGerirEnc) abrirGerirEnc.addEventListener("click", openGerir);
-  if (abrirGerirEnc2) abrirGerirEnc2.addEventListener("click", openGerir);
-  if (fecharGerirEnc) fecharGerirEnc.addEventListener("click", (e)=>{ e.preventDefault(); gerirEncModal.classList.remove("show"); });
-  gerirEncModal.addEventListener("click", (e)=>{ if(e.target.id==="gerirEncModal") gerirEncModal.classList.remove("show"); });
+  // ========= MODAL: carteiras =========
+  const carteirasModal = document.getElementById("carteirasModal");
+  function openCarteiras(e){ if(e) e.preventDefault(); carteirasModal.classList.add("show"); }
+  document.getElementById("abrirCarteirasLink")?.addEventListener("click", openCarteiras);
+  document.getElementById("abrirCarteirasLink2")?.addEventListener("click", openCarteiras);
+  document.getElementById("fecharCarteirasLink")?.addEventListener("click",(e)=>{e.preventDefault(); carteirasModal.classList.remove("show");});
+  carteirasModal?.addEventListener("click",(e)=>{ if(e.target.id==="carteirasModal") carteirasModal.classList.remove("show"); });
+  initTabsInside(carteirasModal);
 
-  // tabs scoped do gerir
-  (function initTabsGerir(){
-    const box = gerirEncModal.querySelector(".modal-box");
-    const btns = box.querySelectorAll(".tab-btn");
-    const panes = box.querySelectorAll(".tab-pane");
-    btns.forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        btns.forEach(b=>b.classList.remove("active"));
-        panes.forEach(p=>p.classList.remove("active"));
-        btn.classList.add("active");
-        box.querySelector("#"+btn.dataset.tab).classList.add("active");
-      });
-    });
-  })();
+  // ========= MODAL: dados pessoais =========
+  const dadosModal = document.getElementById("dadosModal");
+  function openDados(e){ if(e) e.preventDefault(); dadosModal.classList.add("show"); }
+  document.getElementById("abrirDadosLink")?.addEventListener("click", openDados);
+  document.getElementById("abrirDadosLink2")?.addEventListener("click", openDados);
+  document.getElementById("fecharDadosLink")?.addEventListener("click",(e)=>{e.preventDefault(); dadosModal.classList.remove("show");});
+  dadosModal?.addEventListener("click",(e)=>{ if(e.target.id==="dadosModal") dadosModal.classList.remove("show"); });
 
-  // ====== abrir/fechar HISTÓRICO ======
-  const historicoEncModal = document.getElementById("historicoEncModal");
-  const abrirHistoricoEnc = document.getElementById("abrirHistoricoEnc");
-  const abrirHistoricoEnc2 = document.getElementById("abrirHistoricoEnc2");
-  const fecharHistoricoEnc = document.getElementById("fecharHistoricoEnc");
-
-  function openHist(e){ e.preventDefault(); historicoEncModal.classList.add("show"); }
-  if (abrirHistoricoEnc) abrirHistoricoEnc.addEventListener("click", openHist);
-  if (abrirHistoricoEnc2) abrirHistoricoEnc2.addEventListener("click", openHist);
-  if (fecharHistoricoEnc) fecharHistoricoEnc.addEventListener("click", (e)=>{ e.preventDefault(); historicoEncModal.classList.remove("show"); });
-  historicoEncModal.addEventListener("click", (e)=>{ if(e.target.id==="historicoEncModal") historicoEncModal.classList.remove("show"); });
-
-  // tabs scoped do histórico
-  (function initTabsHistorico(){
-    const box = historicoEncModal.querySelector(".modal-box");
-    const btns = box.querySelectorAll(".tab-btn");
-    const panes = box.querySelectorAll(".tab-pane");
-    btns.forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        btns.forEach(b=>b.classList.remove("active"));
-        panes.forEach(p=>p.classList.remove("active"));
-        btn.classList.add("active");
-        box.querySelector("#"+btn.dataset.tab).classList.add("active");
-      });
-    });
-  })();
-
-  // ESC fecha
-  document.addEventListener("keydown", (e)=>{
+  // ESC fecha tudo
+  document.addEventListener("keydown",(e)=>{
     if(e.key==="Escape"){
-      gerirEncModal.classList.remove("show");
-      historicoEncModal.classList.remove("show");
+      gerirEncModal?.classList.remove("show");
+      carteirasModal?.classList.remove("show");
+      dadosModal?.classList.remove("show");
     }
   });
+
+  // auto abrir (opcional): ?modal=carteiras
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("modal")==="carteiras") openCarteiras();
+  if (params.get("modal")==="dados") openDados();
+  if (params.get("modal")==="encomendas") openGerir();
 </script>
 
 </body>

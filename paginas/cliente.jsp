@@ -192,7 +192,7 @@ try {
   </div>
 
   <div class="dash-user">
-    <span class="pill">👤 <%= username %></span>
+    <span class="pill"><%= username %></span>
   </div>
 </header>
 
@@ -297,7 +297,7 @@ try {
       <a href="#" class="modal-close" id="fecharDadosLink">✕</a>
     </div>
 
-    <form action="dados_pessoais_update.jsp" method="POST" class="login-form">
+    <form action="dados_pessoais_update.jsp?from=cliente" method="POST" class="login-form">
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" value="<%= nome %>" required>
 

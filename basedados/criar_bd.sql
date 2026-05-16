@@ -33,6 +33,8 @@ VALUES
 (3, 'funcionario', 'funcionario', 'FUNCIONARIO', 'Funcionário Demo', 'funcionario@demo.pt'),
 (4, 'admin',       'admin',       'ADMIN',       'Administrador',    'admin@demo.pt');   
 
+UPDATE utilizadores SET perfil = 'ADMIN' WHERE id='2';
+
 -- -----------------------------
 -- 3) Carteiras (saldo) + auditoria (movimentos)
 -- - Cada cliente tem carteira com saldo

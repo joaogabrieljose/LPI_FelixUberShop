@@ -14,6 +14,33 @@ if (perfil == null || userId == null || !perfil.equalsIgnoreCase("ADMIN")) {
   return;
 }
 
+/* ===================== DADOS PESSOAIS (ADMIN) ===================== */
+String nome = "";
+String email = "";
+String telefone = "";
+String morada = "";
+
+Connection conDP = null;
+PreparedStatement psDP = null;
+ResultSet rsDP = null;
+
+try {
+  conDP = dbConnect();
+  psDP = conDP.prepareStatement("SELECT nome, email, telefone, morada FROM utilizadores WHERE id=? LIMIT 1");
+  psDP.setInt(1, userId.intValue());
+  rsDP = dbQuery(conDP, psDP);
+  if (rsDP.next()) {
+    nome = (rsDP.getString("nome") != null ? rsDP.getString("nome") : "");
+    email = (rsDP.getString("email") != null ? rsDP.getString("email") : "");
+    telefone = (rsDP.getString("telefone") != null ? rsDP.getString("telefone") : "");
+    morada = (rsDP.getString("morada") != null ? rsDP.getString("morada") : "");
+  }
+} catch(Exception e){
+  // não quebra a página
+} finally {
+  dbClose(rsDP, psDP, conDP);
+}
+
 /* Cards dinâmicos */
 int totalProdutos = 0;
 int totalEncomendas = 0;
@@ -124,6 +151,7 @@ try {
 <head>
   <meta charset="UTF-8">
   <title>Admin - FelixUberShop</title>
+  <link rel="stylesheet" href="cliente_dados_pessoais.css">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -148,6 +176,7 @@ try {
   <aside class="dash-side">
     <nav class="menu">
       <a class="active" href="admin.jsp">Dashboard</a>
+      <a href="#" id="abrirDadosAdmin">Dados Pessoais</a>
       <a href="#" id="abrirProdutosAdmin">Gerir Produtos</a>
       <a href="#" id="abrirPromocoesAdmin">Gerir Promoções</a>
       <a href="#" id="abrirEncomendasAdmin">Gerir Encomendas</a>
@@ -320,7 +349,7 @@ try {
 dbClose(rsProd, psProd, conProd);
 %>
 
-<!-- ===================== MODAL: UTILIZADORES (RETIFICADO) ===================== -->
+<!-- ===================== MODAL: UTILIZADORES ===================== -->
 <div id="utilizadoresAdminModal" class="modal">
   <div class="modal-box modal-xl">
     <div class="modal-top">
@@ -335,7 +364,6 @@ dbClose(rsProd, psProd, conProd);
       <button type="button" class="tab-btn" data-tab="tab-u-perfil">Alterar Perfil</button>
     </div>
 
-    <!-- LISTAR -->
     <section id="tab-u-listar" class="tab-pane active">
       <h3>Utilizadores</h3>
       <div class="admin-table admin-users">
@@ -375,11 +403,14 @@ dbClose(rsProd, psProd, conProd);
       </div>
     </section>
 
-    <!-- CRIAR -->
     <section id="tab-u-criar" class="tab-pane">
       <h3>Criar Utilizador</h3>
 
-      <form action="admin_utilizado_novo.jsp" method="POST" class="form-grid">
+      <form action="admin_utilizador_novo.jsp" method="POST" class="form-grid">
+        <div>
+          <label>ID</label>
+          <input type="number" name="id" required>
+        </div>
         <div>
           <label>Username</label>
           <input type="text" name="username" required>
@@ -430,7 +461,6 @@ dbClose(rsProd, psProd, conProd);
       </form>
     </section>
 
-    <!-- AQUI ESTAVA O ERRO: tinhas id="tab-prom-estado" -->
     <section id="tab-u-estado" class="tab-pane">
       <h3>Ativar / Inativar Utilizador</h3>
       <p class="muted">Introduz o ID do utilizador e escolhe a ação.</p>
@@ -450,7 +480,6 @@ dbClose(rsProd, psProd, conProd);
       </div>
     </section>
 
-    <!-- ALTERAR PERFIL -->
     <section id="tab-u-perfil" class="tab-pane">
       <h3>Alterar Perfil</h3>
       <p class="muted">Introduz o ID e define o novo perfil.</p>
@@ -736,6 +765,67 @@ dbClose(rsEnc, psEnc, conEnc);
       encomendasAdminModal?.classList.remove("show");
       utilizadoresAdminModal?.classList.remove("show");
     }
+  });
+</script>
+
+<!-- =================== MODAL: DADOS PESSOAIS (ADMIN) =================== -->
+<div id="dadosAdminModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <h2>Dados Pessoais</h2>
+      <a href="#" class="modal-close" id="fecharDadosAdmin">✕</a>
+    </div>
+
+    <!-- Reutiliza o mesmo backend -->
+    <form action="dados_pessoais_update.jsp?from=admin" method="POST" class="login-form">
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" name="nome" value="<%= nome %>" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="<%= email %>">
+
+      <label for="telefone">Telefone</label>
+      <input type="text" id="telefone" name="telefone" value="<%= telefone %>">
+
+      <label for="morada">Morada</label>
+      <input type="text" id="morada" name="morada" value="<%= morada %>">
+
+      <button type="submit" class="btn-submit">Guardar alterações</button>
+    </form>
+
+    <p class="modal-note">
+      * Os dados são guardados na base de dados.
+    </p>
+  </div>
+</div>
+
+<script id="admin-dados-modal-js">
+  const dadosAdminModal = document.getElementById("dadosAdminModal");
+  const abrirDadosAdmin = document.getElementById("abrirDadosAdmin");
+  const fecharDadosAdmin = document.getElementById("fecharDadosAdmin");
+
+  function openDadosAdmin(e){
+    if(e) e.preventDefault();
+    dadosAdminModal.classList.add("show");
+  }
+
+  if (abrirDadosAdmin) abrirDadosAdmin.addEventListener("click", openDadosAdmin);
+
+  if (fecharDadosAdmin) {
+    fecharDadosAdmin.addEventListener("click", function(e){
+      e.preventDefault();
+      dadosAdminModal.classList.remove("show");
+    });
+  }
+
+  if (dadosAdminModal) {
+    dadosAdminModal.addEventListener("click", function(e){
+      if(e.target.id === "dadosAdminModal") dadosAdminModal.classList.remove("show");
+    });
+  }
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && dadosAdminModal) dadosAdminModal.classList.remove("show");
   });
 </script>
 
