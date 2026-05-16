@@ -34,7 +34,7 @@ ResultSet rs = null;
 try {
   con = dbConnect();
 
-  // 1) Confirmar estado atual
+  //  Confirmar estado atual
   ps = con.prepareStatement("SELECT estado FROM encomendas WHERE id=? LIMIT 1");
   ps.setLong(1, encomendaId);
   rs = dbQuery(con, ps);

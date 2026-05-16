@@ -3,7 +3,7 @@
 <%@ include file="../basedados/basedados.h" %>
 
 <%
-/* ===================== AUTH ===================== */
+/* restrição de acesso */
 String perfil = (String) session.getAttribute("perfil");
 Integer userIdObj = (Integer) session.getAttribute("userId");
 
@@ -21,8 +21,7 @@ String clienteStr = request.getParameter("cliente_id");
 String produtoStr = request.getParameter("produto_id");
 String qtdStr     = request.getParameter("quantidade");
 
-if (clienteStr == null || produtoStr == null || qtdStr == null ||
-    clienteStr.trim().isEmpty() || produtoStr.trim().isEmpty() || qtdStr.trim().isEmpty()) {
+if (clienteStr == null || produtoStr == null || qtdStr == null || clienteStr.trim().isEmpty() || produtoStr.trim().isEmpty() || qtdStr.trim().isEmpty()) {
   response.sendRedirect(BACK + "&enc=erro_campos");
   return;
 }
@@ -49,12 +48,10 @@ ResultSet rs = null;
 
 try {
   con = dbConnect();
-  con.setAutoCommit(false); // transacao
+  con.setAutoCommit(false); 
 
-  // 1) confirmar cliente existe e esta ativo
-  ps = con.prepareStatement(
-    "SELECT id FROM utilizadores WHERE id=? AND perfil='CLIENTE' AND ativo=1 LIMIT 1"
-  );
+  //  confirmar cliente existe e esta ativo
+  ps = con.prepareStatement("SELECT id FROM utilizadores WHERE id=? AND perfil='CLIENTE' AND ativo=1 LIMIT 1");
   ps.setInt(1, clienteId);
   rs = ps.executeQuery();
   if (!rs.next()) {
@@ -65,7 +62,7 @@ try {
   }
   dbClose(rs, ps, null);
 
-  // 2) buscar produto e preco atual
+  //  buscar produto e preco atual
   ps = con.prepareStatement("SELECT nome, preco FROM produtos WHERE id=? AND ativo=1 LIMIT 1");
   ps.setInt(1, produtoId);
   rs = ps.executeQuery();
@@ -86,7 +83,7 @@ try {
     return;
   }
 
-  // 3) carteiras: cliente (UTILIZADOR) e loja (LOJA)
+  //  carteiras: cliente (UTILIZADOR) e loja (LOJA)
   int carteiraCliente = 0;
   double saldoCliente = 0.0;
 
@@ -117,14 +114,14 @@ try {
     return;
   }
 
-  // 4) validar saldo suficiente
+  //  validar saldo suficiente
   if (saldoCliente < subtotal) {
     con.rollback();
     response.sendRedirect(BACK + "&enc=saldo_insuficiente");
     return;
   }
 
-  // 5) gerar identificador unico (12 chars) e garantir na BD
+  //  gerar identificador unico (12 chars) e garantir na BD
   String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   String identificador = null;
 
@@ -154,7 +151,7 @@ try {
     return;
   }
 
-  // 6) criar encomenda como PAGA
+  //  criar encomenda como PAGA
   ps = con.prepareStatement(
     "INSERT INTO encomendas(identificador, cliente_id, estado, total) VALUES(?,?, 'PAGA', ?)",
     Statement.RETURN_GENERATED_KEYS
@@ -175,7 +172,7 @@ try {
     return;
   }
 
-  // 7) inserir item
+  //  inserir item
   ps = con.prepareStatement(
     "INSERT INTO encomenda_itens(encomenda_id, produto_id, quantidade, preco_unit, subtotal) VALUES(?,?,?,?,?)"
   );
@@ -187,7 +184,7 @@ try {
   ps.executeUpdate();
   dbClose(null, ps, null);
 
-  // 8) atualizar saldos
+  //  atualizar saldos
   ps = con.prepareStatement("UPDATE carteiras SET saldo = saldo - ? WHERE id=?");
   ps.setDouble(1, subtotal);
   ps.setInt(2, carteiraCliente);
@@ -200,16 +197,13 @@ try {
   ps.executeUpdate();
   dbClose(null, ps, null);
 
-  // 9) registar movimento (ENUM tem de bater certo)
-  // ✅ IMPORTANTE: tag pesquisavel para aparecer no historico de "Criacoes"
+  //  registar movimento (ENUM tem de bater certo) 
   String descricaoMov = "PAGAMENTO_ENCOMENDA identificador=" + identificador +
                         " funcionario_id=" + funcId +
                         " cliente_id=" + clienteId +
                         " produto_id=" + produtoId +
                         " produto_nome=" + (nomeProduto != null ? nomeProduto : "") +
-                        " qtd=" + qtd;
-
-  ps = con.prepareStatement(
+                        " qtd=" + qtd; ps = con.prepareStatement(
     "INSERT INTO movimentos_carteira(tipo_operacao, valor, carteira_origem_id, carteira_destino_id, descricao) " +
     "VALUES('PAGAMENTO_ENCOMENDA', ?, ?, ?, ?)"
   );

@@ -104,9 +104,7 @@ try{
   );
   psHV.setInt(1, funcId);
   rsHV = dbQuery(conHV, psHV);
-} catch(Exception e){
-  // ignora
-}
+} catch(Exception e){ }
 
 /* HISTÓRICO: CRIAÇÕES */
 Connection conHC = null;
@@ -126,9 +124,7 @@ try{
   );
   psHC.setInt(1, funcId);
   rsHC = dbQuery(conHC, psHC);
-} catch(Exception e){
-  // ignora
-}
+} catch(Exception e){ }
 %>
 
 <!DOCTYPE html>
@@ -171,9 +167,8 @@ try{
 
     <section class="dash-hero">
       <div class="dash-hero-text">
-        <h2>Painel do Funcionário</h2>
-        <p>Gerir encomendas: <strong>criar para cliente</strong> e <strong>validar</strong>.</p>
-
+        <h2>Painel do Funcionário</h2><br>
+        
         <% if (msg != null) { %>
           <p style="font-weight:900; color:<%= (msg.startsWith("ok") ? "green" : "red") %>;">
             <%= (msg.startsWith("ok") ? "Operação realizada com sucesso." : ("Erro: " + msg)) %>
@@ -192,18 +187,6 @@ try{
         <h3>Validações realizadas</h3>
         <p class="dash-big"><%= totalValidadas %></p>
         <p class="dash-muted">Total validadas por ti</p>
-      </article>
-
-      <article class="dash-card">
-        <h3>Regra de validação</h3>
-        <p class="dash-big">PAGA → VALIDADA</p>
-        <p class="dash-muted">Só valida se estiver PAGA</p>
-      </article>
-
-      <article class="dash-card">
-        <h3>Gestão</h3>
-        <p class="dash-big">Criar + Validar</p>
-        <p class="dash-muted">Tudo no mesmo local</p>
       </article>
     </section>
 
@@ -476,14 +459,6 @@ try{
     }
   });
 </script>
-
-<%
-dbClose(rsSel, psSel, conSel);
-dbClose(rsCli, psCli, conCli);
-dbClose(rsProd, psProd, conProd);
-dbClose(rsHV, psHV, conHV);
-dbClose(rsHC, psHC, conHC);
-%>
 
 </body>
 </html>
